@@ -1,0 +1,29 @@
+{
+  "name": "content-ops-hub",
+  "version": "1.0.0",
+  "private": true,
+  "description": "趋势驱动内容运营闭环 - 趋势发现→标签研究→内容生成→发布→效果追踪→迭代",
+  "workspaces": [
+    "server",
+    "client"
+  ],
+  "scripts": {
+    "dev": "concurrently -n server,client -c blue,green \"npm:dev:server\" \"npm:dev:client\"",
+    "dev:server": "npm run dev --workspace server",
+    "dev:client": "npm run dev --workspace client",
+    "build": "npm run build --workspace server && npm run build --workspace client",
+    "build:server": "npm run build --workspace server",
+    "build:client": "npm run build --workspace client",
+    "lint": "echo 'Add linter config'",
+    "db:init": "npm run db:init --workspace server",
+    "install:all": "npm install",
+    "ledger:check": "node scripts/check-ledger.js",
+    "ledger:validate": "node scripts/check-ledger.js --test && node scripts/check-ledger.js"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  },
+  "engines": {
+    "node": ">=18.0.0 <24.0.0"
+  }
+}

@@ -1,0 +1,27 @@
+/* 主题：botanical — 植物自然 */
+.card-inner {
+  background: linear-gradient(180deg, #f0f5e9 0%, #d4e4bc 100%);
+  color: #2d4a3e;
+  position: relative;
+}
+
+.card-inner::before {
+  content: "🌿";
+  position: absolute;
+  font-size: 200px;
+  opacity: 0.08;
+  bottom: -40px;
+  right: -20px;
+  transform: rotate(-15deg);
+}
+
+.cover-title { color: #2d4a3e; }
+.cover-subtitle { color: #5a7a5a; }
+
+.card-content h1 { color: #2d4a3e; }
+.card-content h2 { color: #3d6b52; }
+.card-content h3 { color: #4a7c59; }
+.card-content p { color: #3a5a4a; }
+.card-content li { color: #3a5a4a; }
+.card-content li::before { content: "🌱"; color: transparent; font-size: 24px; }
+.card-content strong { color: #2d4a3e; background: rgba(90, 122, 90, 0.15); padding: 2px 8px; border-radius: 8px; }

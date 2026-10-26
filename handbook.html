@@ -1,0 +1,1820 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Content Ops Hub - 项目手册</title>
+<style>
+  /* ==================== CSS 变量与全局重置 ==================== */
+  :root {
+    --bg-primary: #0d1117;
+    --bg-secondary: #161b22;
+    --bg-tertiary: #1c2128;
+    --bg-card: #1a1f29;
+    --bg-hover: #21262d;
+    --border-color: #30363d;
+    --border-light: #3b4250;
+    --text-primary: #e6edf3;
+    --text-secondary: #8b949e;
+    --text-muted: #6e7681;
+    --accent-blue: #58a6ff;
+    --accent-purple: #bc8cff;
+    --accent-green: #3fb950;
+    --accent-orange: #d29922;
+    --accent-red: #f85149;
+    --accent-cyan: #39c5cf;
+    --accent-pink: #f778ba;
+    --gradient-blue: linear-gradient(135deg, #1f6feb 0%, #58a6ff 100%);
+    --gradient-purple: linear-gradient(135deg, #8957e5 0%, #bc8cff 100%);
+    --gradient-green: linear-gradient(135deg, #238636 0%, #3fb950 100%);
+    --gradient-header: linear-gradient(135deg, #0d1117 0%, #161b22 50%, #1a1f29 100%);
+    --shadow-card: 0 4px 20px rgba(0, 0, 0, 0.4);
+    --shadow-glow: 0 0 30px rgba(88, 166, 255, 0.15);
+    --radius-sm: 6px;
+    --radius-md: 10px;
+    --radius-lg: 16px;
+    --font-main: 'Noto Sans CJK SC', 'Microsoft YaHei', 'PingFang SC', sans-serif;
+    --font-mono: 'JetBrains Mono', 'Fira Code', 'Consolas', 'Courier New', monospace;
+    --max-width: 1200px;
+  }
+
+  * {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+  }
+
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    font-family: var(--font-main);
+    background-color: var(--bg-primary);
+    color: var(--text-primary);
+    line-height: 1.7;
+    font-size: 15px;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  /* ==================== 滚动条 ==================== */
+  ::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+  ::-webkit-scrollbar-track {
+    background: var(--bg-secondary);
+  }
+  ::-webkit-scrollbar-thumb {
+    background: var(--border-color);
+    border-radius: 5px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: var(--text-muted);
+  }
+
+  /* ==================== 导航栏 ==================== */
+  nav {
+    position: sticky;
+    top: 0;
+    z-index: 1000;
+    background: rgba(13, 17, 23, 0.92);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--border-color);
+    padding: 0 24px;
+  }
+  .nav-container {
+    max-width: var(--max-width);
+    margin: 0 auto;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 56px;
+    overflow-x: auto;
+  }
+  .nav-logo {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-weight: 700;
+    font-size: 16px;
+    white-space: nowrap;
+    color: var(--text-primary);
+  }
+  .nav-logo .logo-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: var(--gradient-blue);
+    box-shadow: 0 0 10px var(--accent-blue);
+  }
+  .nav-links {
+    display: flex;
+    gap: 4px;
+    list-style: none;
+  }
+  .nav-links a {
+    color: var(--text-secondary);
+    text-decoration: none;
+    font-size: 13px;
+    padding: 6px 12px;
+    border-radius: var(--radius-sm);
+    transition: all 0.2s;
+    white-space: nowrap;
+  }
+  .nav-links a:hover {
+    color: var(--text-primary);
+    background: var(--bg-hover);
+  }
+
+  /* ==================== Hero 区域 ==================== */
+  .hero {
+    background: var(--gradient-header);
+    padding: 80px 24px 60px;
+    text-align: center;
+    border-bottom: 1px solid var(--border-color);
+    position: relative;
+    overflow: hidden;
+  }
+  .hero::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background: radial-gradient(circle at 30% 40%, rgba(88, 166, 255, 0.08) 0%, transparent 50%),
+                radial-gradient(circle at 70% 60%, rgba(188, 140, 255, 0.06) 0%, transparent 50%);
+    pointer-events: none;
+  }
+  .hero-content {
+    position: relative;
+    z-index: 1;
+    max-width: 800px;
+    margin: 0 auto;
+  }
+  .hero-badge {
+    display: inline-block;
+    padding: 4px 14px;
+    border-radius: 20px;
+    background: rgba(88, 166, 255, 0.1);
+    border: 1px solid rgba(88, 166, 255, 0.3);
+    color: var(--accent-blue);
+    font-size: 12px;
+    font-weight: 600;
+    margin-bottom: 20px;
+    letter-spacing: 0.5px;
+  }
+  .hero h1 {
+    font-size: 42px;
+    font-weight: 800;
+    margin-bottom: 16px;
+    background: linear-gradient(135deg, #e6edf3 0%, #58a6ff 50%, #bc8cff 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    letter-spacing: -1px;
+  }
+  .hero p {
+    font-size: 17px;
+    color: var(--text-secondary);
+    margin-bottom: 32px;
+    max-width: 600px;
+    margin-left: auto;
+    margin-right: auto;
+  }
+  .hero-stats {
+    display: flex;
+    justify-content: center;
+    gap: 40px;
+    flex-wrap: wrap;
+  }
+  .hero-stat {
+    text-align: center;
+  }
+  .hero-stat .num {
+    font-size: 28px;
+    font-weight: 700;
+    color: var(--accent-blue);
+    font-family: var(--font-mono);
+  }
+  .hero-stat .label {
+    font-size: 12px;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-top: 4px;
+  }
+
+  /* ==================== 通用区块 ==================== */
+  section {
+    max-width: var(--max-width);
+    margin: 0 auto;
+    padding: 60px 24px;
+  }
+  .section-header {
+    margin-bottom: 36px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .section-num {
+    font-family: var(--font-mono);
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--accent-blue);
+    background: rgba(88, 166, 255, 0.1);
+    border: 1px solid rgba(88, 166, 255, 0.3);
+    padding: 2px 10px;
+    border-radius: var(--radius-sm);
+    white-space: nowrap;
+  }
+  .section-header h2 {
+    font-size: 26px;
+    font-weight: 700;
+    color: var(--text-primary);
+  }
+  .section-desc {
+    color: var(--text-secondary);
+    font-size: 14px;
+    margin-top: 8px;
+    margin-left: 44px;
+  }
+
+  /* ==================== 卡片网格 ==================== */
+  .card-grid {
+    display: grid;
+    gap: 16px;
+  }
+  .card-grid.cols-2 { grid-template-columns: repeat(2, 1fr); }
+  .card-grid.cols-3 { grid-template-columns: repeat(3, 1fr); }
+  .card-grid.cols-4 { grid-template-columns: repeat(4, 1fr); }
+  @media (max-width: 900px) {
+    .card-grid.cols-2, .card-grid.cols-3, .card-grid.cols-4 {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  /* ==================== 通用卡片 ==================== */
+  .card {
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    padding: 20px;
+    transition: border-color 0.2s, transform 0.2s;
+  }
+  .card:hover {
+    border-color: var(--border-light);
+    transform: translateY(-2px);
+  }
+
+  /* ==================== 技术栈卡片 ==================== */
+  .stack-card {
+    border-left: 3px solid var(--accent-blue);
+  }
+  .stack-card.purple { border-left-color: var(--accent-purple); }
+  .stack-card.green { border-left-color: var(--accent-green); }
+  .stack-card .stack-title {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-secondary);
+    margin-bottom: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  .stack-card .stack-items {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .tech-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 5px 12px;
+    border-radius: var(--radius-sm);
+    font-size: 13px;
+    font-weight: 500;
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border-color);
+    color: var(--text-primary);
+  }
+  .tech-tag.blue { color: var(--accent-blue); border-color: rgba(88,166,255,0.3); }
+  .tech-tag.purple { color: var(--accent-purple); border-color: rgba(188,140,255,0.3); }
+  .tech-tag.green { color: var(--accent-green); border-color: rgba(63,185,80,0.3); }
+  .tech-tag.orange { color: var(--accent-orange); border-color: rgba(210,153,34,0.3); }
+  .tech-tag.cyan { color: var(--accent-cyan); border-color: rgba(57,197,207,0.3); }
+
+  /* ==================== 架构图 ==================== */
+  .arch-diagram {
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-lg);
+    padding: 32px;
+    margin-bottom: 24px;
+    overflow-x: auto;
+  }
+  .arch-diagram h3 {
+    font-size: 16px;
+    font-weight: 600;
+    margin-bottom: 20px;
+    color: var(--text-primary);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .arch-diagram h3 .dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+  }
+  .arch-diagram h3 .dot.blue { background: var(--accent-blue); }
+  .arch-diagram h3 .dot.purple { background: var(--accent-purple); }
+  .arch-diagram svg {
+    display: block;
+    margin: 0 auto;
+    max-width: 100%;
+    height: auto;
+  }
+
+  /* ==================== 模块卡片 ==================== */
+  .module-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    padding: 24px;
+    transition: all 0.25s;
+    position: relative;
+    overflow: hidden;
+  }
+  .module-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: var(--accent-blue);
+  }
+  .module-card[data-color="purple"]::before { background: var(--accent-purple); }
+  .module-card[data-color="green"]::before { background: var(--accent-green); }
+  .module-card[data-color="orange"]::before { background: var(--accent-orange); }
+  .module-card[data-color="cyan"]::before { background: var(--accent-cyan); }
+  .module-card[data-color="pink"]::before { background: var(--accent-pink); }
+  .module-card[data-color="red"]::before { background: var(--accent-red); }
+  .module-card:hover {
+    border-color: var(--border-light);
+    transform: translateY(-3px);
+    box-shadow: var(--shadow-card);
+  }
+  .module-card .module-icon {
+    font-size: 28px;
+    margin-bottom: 12px;
+    display: block;
+  }
+  .module-card .module-id {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--text-muted);
+    margin-bottom: 4px;
+  }
+  .module-card .module-name {
+    font-size: 17px;
+    font-weight: 700;
+    margin-bottom: 4px;
+    color: var(--text-primary);
+  }
+  .module-card .module-en {
+    font-size: 12px;
+    color: var(--text-muted);
+    margin-bottom: 12px;
+    font-family: var(--font-mono);
+  }
+  .module-card .module-desc {
+    font-size: 13px;
+    color: var(--text-secondary);
+    margin-bottom: 16px;
+    line-height: 1.6;
+  }
+  .module-card .module-skills {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+  .skill-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 3px 10px;
+    border-radius: 12px;
+    font-size: 11px;
+    font-weight: 600;
+    font-family: var(--font-mono);
+  }
+  .skill-badge.file {
+    background: rgba(88, 166, 255, 0.12);
+    color: var(--accent-blue);
+    border: 1px solid rgba(88, 166, 255, 0.25);
+  }
+  .skill-badge.api {
+    background: rgba(188, 140, 255, 0.12);
+    color: var(--accent-purple);
+    border: 1px solid rgba(188, 140, 255, 0.25);
+  }
+  .skill-badge.local-model {
+    background: rgba(63, 185, 80, 0.12);
+    color: var(--accent-green);
+    border: 1px solid rgba(63, 185, 80, 0.25);
+  }
+
+  /* ==================== 流水线 ==================== */
+  .pipeline-flow {
+    display: flex;
+    align-items: stretch;
+    gap: 0;
+    flex-wrap: wrap;
+    justify-content: center;
+    margin: 20px 0;
+  }
+  .pipeline-stage {
+    flex: 1;
+    min-width: 150px;
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    padding: 20px 16px;
+    text-align: center;
+    position: relative;
+    transition: all 0.2s;
+  }
+  .pipeline-stage:hover {
+    border-color: var(--accent-blue);
+    background: var(--bg-hover);
+  }
+  .pipeline-stage .stage-num {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: var(--gradient-blue);
+    color: #fff;
+    font-weight: 700;
+    font-size: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 12px;
+  }
+  .pipeline-stage .stage-name {
+    font-size: 14px;
+    font-weight: 700;
+    margin-bottom: 6px;
+  }
+  .pipeline-stage .stage-code {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    color: var(--text-muted);
+    margin-bottom: 10px;
+  }
+  .pipeline-stage .stage-desc {
+    font-size: 12px;
+    color: var(--text-secondary);
+    line-height: 1.5;
+  }
+  .pipeline-arrow {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    color: var(--text-muted);
+    font-size: 20px;
+  }
+  @media (max-width: 900px) {
+    .pipeline-arrow {
+      transform: rotate(90deg);
+      width: 100%;
+      height: 30px;
+    }
+  }
+
+  /* ==================== 表格 ==================== */
+  .table-wrapper {
+    overflow-x: auto;
+    border-radius: var(--radius-md);
+    border: 1px solid var(--border-color);
+  }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+  }
+  thead {
+    background: var(--bg-tertiary);
+  }
+  th {
+    padding: 12px 16px;
+    text-align: left;
+    font-weight: 600;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    font-size: 11px;
+    letter-spacing: 0.5px;
+    border-bottom: 1px solid var(--border-color);
+    white-space: nowrap;
+  }
+  td {
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--border-color);
+    color: var(--text-primary);
+  }
+  tbody tr:last-child td {
+    border-bottom: none;
+  }
+  tbody tr:hover {
+    background: var(--bg-hover);
+  }
+  td .method {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-family: var(--font-mono);
+    font-size: 11px;
+    font-weight: 700;
+    margin-right: 8px;
+  }
+  td .method.GET { background: rgba(63,185,80,0.15); color: var(--accent-green); }
+  td .method.POST { background: rgba(88,166,255,0.15); color: var(--accent-blue); }
+  td .method.PUT { background: rgba(210,153,34,0.15); color: var(--accent-orange); }
+  td .method.DELETE { background: rgba(248,81,73,0.15); color: var(--accent-red); }
+  td code {
+    font-family: var(--font-mono);
+    font-size: 12px;
+    color: var(--accent-cyan);
+    background: var(--bg-tertiary);
+    padding: 2px 6px;
+    border-radius: 4px;
+  }
+
+  /* ==================== 部署 ==================== */
+  .deploy-steps {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+  .deploy-step {
+    display: flex;
+    gap: 16px;
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    padding: 16px 20px;
+    align-items: flex-start;
+  }
+  .deploy-step .step-num {
+    flex-shrink: 0;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: var(--gradient-blue);
+    color: #fff;
+    font-weight: 700;
+    font-size: 13px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .deploy-step .step-body h4 {
+    font-size: 14px;
+    font-weight: 600;
+    margin-bottom: 4px;
+  }
+  .deploy-step .step-body p {
+    font-size: 13px;
+    color: var(--text-secondary);
+  }
+  .code-block {
+    background: var(--bg-primary);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-sm);
+    padding: 14px 16px;
+    font-family: var(--font-mono);
+    font-size: 13px;
+    color: var(--accent-green);
+    overflow-x: auto;
+    margin-top: 8px;
+    line-height: 1.6;
+  }
+  .code-block .comment { color: var(--text-muted); }
+  .code-block .cmd { color: var(--accent-cyan); }
+  .code-block .flag { color: var(--accent-orange); }
+
+  /* ==================== 技能类型 ==================== */
+  .skill-type-card {
+    text-align: center;
+    padding: 28px 20px;
+  }
+  .skill-type-card .type-icon {
+    width: 56px;
+    height: 56px;
+    border-radius: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 16px;
+    font-size: 24px;
+    font-weight: 700;
+    font-family: var(--font-mono);
+  }
+  .skill-type-card.file .type-icon {
+    background: rgba(88,166,255,0.12);
+    border: 2px solid var(--accent-blue);
+    color: var(--accent-blue);
+  }
+  .skill-type-card.api .type-icon {
+    background: rgba(188,140,255,0.12);
+    border: 2px solid var(--accent-purple);
+    color: var(--accent-purple);
+  }
+  .skill-type-card.local-model .type-icon {
+    background: rgba(63,185,80,0.12);
+    border: 2px solid var(--accent-green);
+    color: var(--accent-green);
+  }
+  .skill-type-card .type-name {
+    font-size: 16px;
+    font-weight: 700;
+    margin-bottom: 8px;
+  }
+  .skill-type-card .type-desc {
+    font-size: 13px;
+    color: var(--text-secondary);
+    line-height: 1.6;
+  }
+
+  /* ==================== LLM 配置 ==================== */
+  .llm-config-card {
+    border-left: 3px solid var(--accent-blue);
+  }
+  .llm-config-card.local { border-left-color: var(--accent-green); }
+  .llm-config-card.cloud { border-left-color: var(--accent-purple); }
+  .llm-config-card.hybrid { border-left-color: var(--accent-orange); }
+  .llm-config-card.custom { border-left-color: var(--accent-cyan); }
+  .llm-config-card .llm-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 12px;
+  }
+  .llm-config-card .llm-badge {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    font-weight: 700;
+    padding: 3px 10px;
+    border-radius: 4px;
+    text-transform: uppercase;
+  }
+  .llm-config-card.local .llm-badge { background: rgba(63,185,80,0.15); color: var(--accent-green); }
+  .llm-config-card.cloud .llm-badge { background: rgba(188,140,255,0.15); color: var(--accent-purple); }
+  .llm-config-card.hybrid .llm-badge { background: rgba(210,153,34,0.15); color: var(--accent-orange); }
+  .llm-config-card.custom .llm-badge { background: rgba(57,197,207,0.15); color: var(--accent-cyan); }
+  .llm-config-card .llm-name {
+    font-size: 16px;
+    font-weight: 700;
+  }
+  .llm-config-card .llm-detail {
+    font-size: 13px;
+    color: var(--text-secondary);
+    line-height: 1.7;
+  }
+  .llm-config-card .llm-detail strong {
+    color: var(--text-primary);
+  }
+
+  /* ==================== Footer ==================== */
+  footer {
+    text-align: center;
+    padding: 40px 24px;
+    border-top: 1px solid var(--border-color);
+    color: var(--text-muted);
+    font-size: 13px;
+  }
+  footer a {
+    color: var(--accent-blue);
+    text-decoration: none;
+  }
+
+  /* ==================== 信息框 ==================== */
+  .info-box {
+    background: rgba(88,166,255,0.06);
+    border: 1px solid rgba(88,166,255,0.2);
+    border-radius: var(--radius-md);
+    padding: 16px 20px;
+    margin-bottom: 24px;
+    display: flex;
+    gap: 12px;
+    align-items: flex-start;
+  }
+  .info-box .info-icon {
+    flex-shrink: 0;
+    color: var(--accent-blue);
+    font-size: 18px;
+    line-height: 1.5;
+  }
+  .info-box .info-text {
+    font-size: 13px;
+    color: var(--text-secondary);
+    line-height: 1.7;
+  }
+  .info-box .info-text strong {
+    color: var(--text-primary);
+  }
+</style>
+</head>
+<body>
+
+<!-- ==================== 导航栏 ==================== -->
+<nav>
+  <div class="nav-container">
+    <div class="nav-logo">
+      <span class="logo-dot"></span>
+      <span>Content Ops Hub</span>
+    </div>
+    <ul class="nav-links">
+      <li><a href="#overview">概览</a></li>
+      <li><a href="#tech-stack">技术栈</a></li>
+      <li><a href="#architecture">架构</a></li>
+      <li><a href="#modules">模块</a></li>
+      <li><a href="#pipeline">流水线</a></li>
+      <li><a href="#api">API</a></li>
+      <li><a href="#database">数据库</a></li>
+      <li><a href="#deploy">部署</a></li>
+      <li><a href="#skills">技能</a></li>
+      <li><a href="#llm">LLM</a></li>
+    </ul>
+  </div>
+</nav>
+
+<!-- ==================== Hero ==================== -->
+<header class="hero">
+  <div class="hero-content">
+    <span class="hero-badge">VUE 3 + EXPRESS + TYPESCRIPT</span>
+    <h1>Content Ops Hub</h1>
+    <p>内容运营一体化平台 -- 整合 xhs-auto-pipeline、social-radar、content-ops-hub 三大项目，提供从趋势发现到内容发布的全链路自动化能力。</p>
+    <div class="hero-stats">
+      <div class="hero-stat">
+        <div class="num">9</div>
+        <div class="label">功能模块</div>
+      </div>
+      <div class="hero-stat">
+        <div class="num">14</div>
+        <div class="label">API 路由</div>
+      </div>
+      <div class="hero-stat">
+        <div class="num">11</div>
+        <div class="label">数据库表</div>
+      </div>
+      <div class="hero-stat">
+        <div class="num">20+</div>
+        <div class="label">技能集成</div>
+      </div>
+      <div class="hero-stat">
+        <div class="num">6</div>
+        <div class="label">流水线阶段</div>
+      </div>
+    </div>
+  </div>
+</header>
+
+<!-- ==================== 1. 项目概览 ==================== -->
+<section id="overview">
+  <div class="section-header">
+    <span class="section-num">01</span>
+    <h2>项目概览</h2>
+  </div>
+  <p class="section-desc">Content Ops Hub 是一个内容运营一体化平台，将三个独立项目合并为统一的工程体系。</p>
+
+  <div class="info-box" style="margin-top: 24px;">
+    <span class="info-icon">i</span>
+    <div class="info-text">
+      <strong>合并背景：</strong>Content Ops Hub 整合了 <strong>xhs-auto-pipeline</strong>（小红书自动化管线）、<strong>social-radar</strong>（社交情报雷达）、<strong>content-ops-hub</strong>（内容运营核心）三个项目，消除了重复代码，统一了数据层与技能调用接口，形成从情报采集、趋势发现、内容生产到发布运营的完整闭环。
+    </div>
+  </div>
+
+  <div class="card-grid cols-3" style="margin-top: 24px;">
+    <div class="card stack-card">
+      <div class="stack-title">后端服务</div>
+      <div style="font-size: 28px; font-weight: 700; color: var(--accent-blue); font-family: var(--font-mono);">3100</div>
+      <div style="font-size: 13px; color: var(--text-secondary); margin-top: 4px;">Express + TypeScript API 端口</div>
+    </div>
+    <div class="card stack-card purple">
+      <div class="stack-title">前端服务</div>
+      <div style="font-size: 28px; font-weight: 700; color: var(--accent-purple); font-family: var(--font-mono);">5180</div>
+      <div style="font-size: 13px; color: var(--text-secondary); margin-top: 4px;">Vue 3 + Vite 开发服务器端口</div>
+    </div>
+    <div class="card stack-card green">
+      <div class="stack-title">合并项目数</div>
+      <div style="font-size: 28px; font-weight: 700; color: var(--accent-green); font-family: var(--font-mono);">3</div>
+      <div style="font-size: 13px; color: var(--text-secondary); margin-top: 4px;">xhs-auto-pipeline / social-radar / content-ops-hub</div>
+    </div>
+  </div>
+
+  <div class="card-grid cols-3" style="margin-top: 16px;">
+    <div class="card">
+      <h4 style="font-size: 14px; margin-bottom: 10px; color: var(--accent-blue);">xhs-auto-pipeline</h4>
+      <p style="font-size: 13px; color: var(--text-secondary);">小红书内容自动化管线，涵盖内容生成、图片生成、发布队列等核心能力。已整合为内容工作室、图片工作室、发布队列模块。</p>
+    </div>
+    <div class="card">
+      <h4 style="font-size: 14px; margin-bottom: 10px; color: var(--accent-purple);">social-radar</h4>
+      <p style="font-size: 13px; color: var(--text-secondary);">社交情报雷达系统，实时监控社交平台趋势与竞品动态。已整合为情报中心、趋势发现、数据分析模块。</p>
+    </div>
+    <div class="card">
+      <h4 style="font-size: 14px; margin-bottom: 10px; color: var(--accent-green);">content-ops-hub</h4>
+      <p style="font-size: 13px; color: var(--text-secondary);">内容运营核心框架，提供流水线编排、闭环管理与统一技能调度。作为平台基座承载所有业务模块。</p>
+    </div>
+  </div>
+</section>
+
+<!-- ==================== 2. 技术栈 ==================== -->
+<section id="tech-stack">
+  <div class="section-header">
+    <span class="section-num">02</span>
+    <h2>技术栈</h2>
+  </div>
+  <p class="section-desc">前后端分离架构，后端基于 Node.js 生态，前端采用 Vue 3 现代化技术栈。</p>
+
+  <div class="card-grid cols-3" style="margin-top: 24px;">
+    <div class="card stack-card">
+      <div class="stack-title">后端 Backend</div>
+      <div class="stack-items">
+        <span class="tech-tag blue">Express</span>
+        <span class="tech-tag blue">TypeScript</span>
+        <span class="tech-tag blue">better-sqlite3</span>
+        <span class="tech-tag blue">Node.js</span>
+        <span class="tech-tag blue">ts-node</span>
+      </div>
+    </div>
+    <div class="card stack-card purple">
+      <div class="stack-title">前端 Frontend</div>
+      <div class="stack-items">
+        <span class="tech-tag purple">Vue 3</span>
+        <span class="tech-tag purple">Element Plus</span>
+        <span class="tech-tag purple">Vite</span>
+        <span class="tech-tag purple">Vue Flow</span>
+        <span class="tech-tag purple">Pinia</span>
+      </div>
+    </div>
+    <div class="card stack-card green">
+      <div class="stack-title">数据库 Database</div>
+      <div class="stack-items">
+        <span class="tech-tag green">SQLite</span>
+        <span class="tech-tag green">WAL 模式</span>
+        <span class="tech-tag green">11 张表</span>
+        <span class="tech-tag green">better-sqlite3</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="card-grid cols-4" style="margin-top: 16px;">
+    <div class="card">
+      <div class="stack-title" style="font-size: 12px;">语言</div>
+      <div class="stack-items">
+        <span class="tech-tag">TypeScript</span>
+        <span class="tech-tag">Vue SFC</span>
+        <span class="tech-tag">SQL</span>
+      </div>
+    </div>
+    <div class="card">
+      <div class="stack-title" style="font-size: 12px;">构建工具</div>
+      <div class="stack-items">
+        <span class="tech-tag orange">Vite</span>
+        <span class="tech-tag orange">tsup</span>
+        <span class="tech-tag orange">tsx</span>
+      </div>
+    </div>
+    <div class="card">
+      <div class="stack-title" style="font-size: 12px;">进程管理</div>
+      <div class="stack-items">
+        <span class="tech-tag cyan">PM2</span>
+        <span class="tech-tag cyan">PowerShell</span>
+        <span class="tech-tag cyan">concurrently</span>
+      </div>
+    </div>
+    <div class="card">
+      <div class="stack-title" style="font-size: 12px;">可视化</div>
+      <div class="stack-items">
+        <span class="tech-tag">Vue Flow</span>
+        <span class="tech-tag">Element Plus</span>
+        <span class="tech-tag">ECharts</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ==================== 3. 架构设计 ==================== -->
+<section id="architecture">
+  <div class="section-header">
+    <span class="section-num">03</span>
+    <h2>架构设计</h2>
+  </div>
+  <p class="section-desc">后端三层架构（Routes - Services - DB），前端四层架构（Views - Components - Pinia Store - API）。</p>
+
+  <!-- 后端架构图 -->
+  <div class="arch-diagram" style="margin-top: 24px;">
+    <h3><span class="dot blue"></span>后端三层架构 (Backend 3-Layer)</h3>
+    <svg width="700" height="320" viewBox="0 0 700 320" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <linearGradient id="bgGrad1" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" style="stop-color:#1f6feb;stop-opacity:0.15"/>
+          <stop offset="100%" style="stop-color:#58a6ff;stop-opacity:0.05"/>
+        </linearGradient>
+        <linearGradient id="arrowGrad1" x1="0%" y1="0%" x2="0%" y2="100%">
+          <stop offset="0%" style="stop-color:#58a6ff;stop-opacity:0.8"/>
+          <stop offset="100%" style="stop-color:#58a6ff;stop-opacity:0.2"/>
+        </linearGradient>
+      </defs>
+
+      <!-- Layer 1: Routes -->
+      <rect x="50" y="20" width="600" height="70" rx="10" fill="url(#bgGrad1)" stroke="#58a6ff" stroke-width="1.5" stroke-opacity="0.4"/>
+      <text x="350" y="48" text-anchor="middle" fill="#58a6ff" font-size="14" font-weight="700" font-family="monospace">Layer 1: Routes (路由层)</text>
+      <text x="350" y="70" text-anchor="middle" fill="#8b949e" font-size="12" font-family="sans-serif">Express Router /api/* -- 请求接收、参数校验、响应封装</text>
+
+      <!-- Arrow -->
+      <path d="M 350 95 L 350 120" stroke="url(#arrowGrad1)" stroke-width="2" fill="none" marker-end="url(#arrowhead1)"/>
+      <polygon points="345,118 355,118 350,128" fill="#58a6ff" fill-opacity="0.6"/>
+
+      <!-- Layer 2: Services -->
+      <rect x="50" y="130" width="600" height="70" rx="10" fill="url(#bgGrad1)" stroke="#58a6ff" stroke-width="1.5" stroke-opacity="0.4"/>
+      <text x="350" y="158" text-anchor="middle" fill="#58a6ff" font-size="14" font-weight="700" font-family="monospace">Layer 2: Services (服务层)</text>
+      <text x="350" y="180" text-anchor="middle" fill="#8b949e" font-size="12" font-family="sans-serif">业务逻辑处理 -- 技能调度、流水线编排、数据转换</text>
+
+      <!-- Arrow -->
+      <path d="M 350 205 L 350 230" stroke="url(#arrowGrad1)" stroke-width="2" fill="none"/>
+      <polygon points="345,228 355,228 350,238" fill="#58a6ff" fill-opacity="0.6"/>
+
+      <!-- Layer 3: DB -->
+      <rect x="50" y="240" width="600" height="70" rx="10" fill="url(#bgGrad1)" stroke="#58a6ff" stroke-width="1.5" stroke-opacity="0.4"/>
+      <text x="350" y="268" text-anchor="middle" fill="#58a6ff" font-size="14" font-weight="700" font-family="monospace">Layer 3: Database (数据层)</text>
+      <text x="350" y="290" text-anchor="middle" fill="#8b949e" font-size="12" font-family="sans-serif">better-sqlite3 -- SQLite WAL 模式 / 11 张业务表</text>
+    </svg>
+  </div>
+
+  <!-- 前端架构图 -->
+  <div class="arch-diagram">
+    <h3><span class="dot purple"></span>前端四层架构 (Frontend 4-Layer)</h3>
+    <svg width="700" height="400" viewBox="0 0 700 400" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <linearGradient id="bgGrad2" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" style="stop-color:#8957e5;stop-opacity:0.15"/>
+          <stop offset="100%" style="stop-color:#bc8cff;stop-opacity:0.05"/>
+        </linearGradient>
+        <linearGradient id="arrowGrad2" x1="0%" y1="0%" x2="0%" y2="100%">
+          <stop offset="0%" style="stop-color:#bc8cff;stop-opacity:0.8"/>
+          <stop offset="100%" style="stop-color:#bc8cff;stop-opacity:0.2"/>
+        </linearGradient>
+      </defs>
+
+      <!-- Layer 1: Views -->
+      <rect x="50" y="20" width="600" height="65" rx="10" fill="url(#bgGrad2)" stroke="#bc8cff" stroke-width="1.5" stroke-opacity="0.4"/>
+      <text x="350" y="46" text-anchor="middle" fill="#bc8cff" font-size="14" font-weight="700" font-family="monospace">Layer 1: Views (视图层)</text>
+      <text x="350" y="68" text-anchor="middle" fill="#8b949e" font-size="12" font-family="sans-serif">Vue Router 页面 -- 9 大模块视图入口</text>
+
+      <!-- Arrow -->
+      <path d="M 350 90 L 350 110" stroke="url(#arrowGrad2)" stroke-width="2" fill="none"/>
+      <polygon points="345,108 355,108 350,118" fill="#bc8cff" fill-opacity="0.6"/>
+
+      <!-- Layer 2: Components -->
+      <rect x="50" y="120" width="600" height="65" rx="10" fill="url(#bgGrad2)" stroke="#bc8cff" stroke-width="1.5" stroke-opacity="0.4"/>
+      <text x="350" y="146" text-anchor="middle" fill="#bc8cff" font-size="14" font-weight="700" font-family="monospace">Layer 2: Components (组件层)</text>
+      <text x="350" y="168" text-anchor="middle" fill="#8b949e" font-size="12" font-family="sans-serif">Element Plus + 自定义组件 / Vue Flow 画布</text>
+
+      <!-- Arrow -->
+      <path d="M 350 190 L 350 210" stroke="url(#arrowGrad2)" stroke-width="2" fill="none"/>
+      <polygon points="345,208 355,208 350,218" fill="#bc8cff" fill-opacity="0.6"/>
+
+      <!-- Layer 3: Pinia Store -->
+      <rect x="50" y="220" width="600" height="65" rx="10" fill="url(#bgGrad2)" stroke="#bc8cff" stroke-width="1.5" stroke-opacity="0.4"/>
+      <text x="350" y="246" text-anchor="middle" fill="#bc8cff" font-size="14" font-weight="700" font-family="monospace">Layer 3: Pinia Store (状态管理层)</text>
+      <text x="350" y="268" text-anchor="middle" fill="#8b949e" font-size="12" font-family="sans-serif">全局状态管理 -- 模块状态、流水线状态、用户配置</text>
+
+      <!-- Arrow -->
+      <path d="M 350 290 L 350 310" stroke="url(#arrowGrad2)" stroke-width="2" fill="none"/>
+      <polygon points="345,308 355,308 350,318" fill="#bc8cff" fill-opacity="0.6"/>
+
+      <!-- Layer 4: API -->
+      <rect x="50" y="320" width="600" height="65" rx="10" fill="url(#bgGrad2)" stroke="#bc8cff" stroke-width="1.5" stroke-opacity="0.4"/>
+      <text x="350" y="346" text-anchor="middle" fill="#bc8cff" font-size="14" font-weight="700" font-family="monospace">Layer 4: API (接口层)</text>
+      <text x="350" y="368" text-anchor="middle" fill="#8b949e" font-size="12" font-family="sans-serif">Axios HTTP 客户端 -- 对接后端 :3100 API</text>
+    </svg>
+  </div>
+
+  <!-- 整体架构图 -->
+  <div class="arch-diagram">
+    <h3><span class="dot blue" style="background: var(--accent-green);"></span>系统整体架构 (System Overview)</h3>
+    <svg width="700" height="260" viewBox="0 0 700 260" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <linearGradient id="feGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" style="stop-color:#8957e5;stop-opacity:0.2"/>
+          <stop offset="100%" style="stop-color:#bc8cff;stop-opacity:0.08"/>
+        </linearGradient>
+        <linearGradient id="beGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" style="stop-color:#1f6feb;stop-opacity:0.2"/>
+          <stop offset="100%" style="stop-color:#58a6ff;stop-opacity:0.08"/>
+        </linearGradient>
+        <linearGradient id="dbGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" style="stop-color:#238636;stop-opacity:0.2"/>
+          <stop offset="100%" style="stop-color:#3fb950;stop-opacity:0.08"/>
+        </linearGradient>
+      </defs>
+
+      <!-- Frontend -->
+      <rect x="30" y="30" width="180" height="200" rx="12" fill="url(#feGrad)" stroke="#bc8cff" stroke-width="1.5" stroke-opacity="0.5"/>
+      <text x="120" y="55" text-anchor="middle" fill="#bc8cff" font-size="13" font-weight="700">Frontend</text>
+      <text x="120" y="72" text-anchor="middle" fill="#8b949e" font-size="11" font-family="monospace">:5180</text>
+      <rect x="50" y="85" width="140" height="24" rx="4" fill="#21262d" stroke="#bc8cff" stroke-width="1" stroke-opacity="0.3"/>
+      <text x="120" y="101" text-anchor="middle" fill="#e6edf3" font-size="11" font-family="monospace">Vue 3 + Vite</text>
+      <rect x="50" y="115" width="140" height="24" rx="4" fill="#21262d" stroke="#bc8cff" stroke-width="1" stroke-opacity="0.3"/>
+      <text x="120" y="131" text-anchor="middle" fill="#e6edf3" font-size="11" font-family="monospace">Element Plus</text>
+      <rect x="50" y="145" width="140" height="24" rx="4" fill="#21262d" stroke="#bc8cff" stroke-width="1" stroke-opacity="0.3"/>
+      <text x="120" y="161" text-anchor="middle" fill="#e6edf3" font-size="11" font-family="monospace">Vue Flow</text>
+      <rect x="50" y="175" width="140" height="24" rx="4" fill="#21262d" stroke="#bc8cff" stroke-width="1" stroke-opacity="0.3"/>
+      <text x="120" y="191" text-anchor="middle" fill="#e6edf3" font-size="11" font-family="monospace">Pinia Store</text>
+
+      <!-- Connection arrow -->
+      <path d="M 215 130 L 255 130" stroke="#8b949e" stroke-width="2" stroke-dasharray="5,3" fill="none"/>
+      <polygon points="253,125 263,130 253,135" fill="#8b949e"/>
+      <text x="235" y="122" text-anchor="middle" fill="#6e7681" font-size="9">HTTP</text>
+
+      <!-- Backend -->
+      <rect x="260" y="30" width="180" height="200" rx="12" fill="url(#beGrad)" stroke="#58a6ff" stroke-width="1.5" stroke-opacity="0.5"/>
+      <text x="350" y="55" text-anchor="middle" fill="#58a6ff" font-size="13" font-weight="700">Backend</text>
+      <text x="350" y="72" text-anchor="middle" fill="#8b949e" font-size="11" font-family="monospace">:3100</text>
+      <rect x="280" y="85" width="140" height="24" rx="4" fill="#21262d" stroke="#58a6ff" stroke-width="1" stroke-opacity="0.3"/>
+      <text x="350" y="101" text-anchor="middle" fill="#e6edf3" font-size="11" font-family="monospace">Express Router</text>
+      <rect x="280" y="115" width="140" height="24" rx="4" fill="#21262d" stroke="#58a6ff" stroke-width="1" stroke-opacity="0.3"/>
+      <text x="350" y="131" text-anchor="middle" fill="#e6edf3" font-size="11" font-family="monospace">Services</text>
+      <rect x="280" y="145" width="140" height="24" rx="4" fill="#21262d" stroke="#58a6ff" stroke-width="1" stroke-opacity="0.3"/>
+      <text x="350" y="161" text-anchor="middle" fill="#e6edf3" font-size="11" font-family="monospace">Skill Engine</text>
+      <rect x="280" y="175" width="140" height="24" rx="4" fill="#21262d" stroke="#58a6ff" stroke-width="1" stroke-opacity="0.3"/>
+      <text x="350" y="191" text-anchor="middle" fill="#e6edf3" font-size="11" font-family="monospace">Pipeline Orch.</text>
+
+      <!-- Connection arrow -->
+      <path d="M 445 130 L 485 130" stroke="#8b949e" stroke-width="2" stroke-dasharray="5,3" fill="none"/>
+      <polygon points="483,125 493,130 483,135" fill="#8b949e"/>
+      <text x="465" y="122" text-anchor="middle" fill="#6e7681" font-size="9">SQL</text>
+
+      <!-- Database -->
+      <rect x="490" y="30" width="180" height="200" rx="12" fill="url(#dbGrad)" stroke="#3fb950" stroke-width="1.5" stroke-opacity="0.5"/>
+      <text x="580" y="55" text-anchor="middle" fill="#3fb950" font-size="13" font-weight="700">Database</text>
+      <text x="580" y="72" text-anchor="middle" fill="#8b949e" font-size="11" font-family="monospace">SQLite (WAL)</text>
+      <rect x="510" y="85" width="140" height="24" rx="4" fill="#21262d" stroke="#3fb950" stroke-width="1" stroke-opacity="0.3"/>
+      <text x="580" y="101" text-anchor="middle" fill="#e6edf3" font-size="11" font-family="monospace">11 Tables</text>
+      <rect x="510" y="115" width="140" height="24" rx="4" fill="#21262d" stroke="#3fb950" stroke-width="1" stroke-opacity="0.3"/>
+      <text x="580" y="131" text-anchor="middle" fill="#e6edf3" font-size="11" font-family="monospace">better-sqlite3</text>
+      <rect x="510" y="145" width="140" height="24" rx="4" fill="#21262d" stroke="#3fb950" stroke-width="1" stroke-opacity="0.3"/>
+      <text x="580" y="161" text-anchor="middle" fill="#e6edf3" font-size="11" font-family="monospace">WAL Mode</text>
+      <rect x="510" y="175" width="140" height="24" rx="4" fill="#21262d" stroke="#3fb950" stroke-width="1" stroke-opacity="0.3"/>
+      <text x="580" y="191" text-anchor="middle" fill="#e6edf3" font-size="11" font-family="monospace">本地文件存储</text>
+    </svg>
+  </div>
+</section>
+
+<!-- ==================== 4. 功能模块 ==================== -->
+<section id="modules">
+  <div class="section-header">
+    <span class="section-num">04</span>
+    <h2>九大功能模块</h2>
+  </div>
+  <p class="section-desc">平台由 9 个核心功能模块组成，每个模块集成一个或多个技能（Skill），覆盖内容运营全生命周期。</p>
+
+  <div class="card-grid cols-3" style="margin-top: 24px;">
+
+    <!-- 模块 1: 情报中心 -->
+    <div class="module-card" data-color="blue">
+      <div class="module-id">MODULE 01</div>
+      <div class="module-name">情报中心</div>
+      <div class="module-en">Radar</div>
+      <div class="module-desc">社交情报雷达，实时监控多平台动态，提供趋势洞察、竞品追踪与评论情感分析。</div>
+      <div class="module-skills">
+        <span class="skill-badge api">trend-research</span>
+        <span class="skill-badge api">social-listening</span>
+        <span class="skill-badge api">competitor-analysis</span>
+        <span class="skill-badge api">comments-analysis</span>
+      </div>
+    </div>
+
+    <!-- 模块 2: 趋势发现 -->
+    <div class="module-card" data-color="cyan">
+      <div class="module-id">MODULE 02</div>
+      <div class="module-name">趋势发现</div>
+      <div class="module-en">Trend Discovery</div>
+      <div class="module-desc">跨平台趋势热点发现，覆盖抖音、TikTok、Instagram 等主流社交平台的热门内容挖掘。</div>
+      <div class="module-skills">
+        <span class="skill-badge api">trend-research</span>
+        <span class="skill-badge api">douyin</span>
+        <span class="skill-badge api">tiktok</span>
+        <span class="skill-badge api">instagram</span>
+      </div>
+    </div>
+
+    <!-- 模块 3: 标签研究 -->
+    <div class="module-card" data-color="purple">
+      <div class="module-id">MODULE 03</div>
+      <div class="module-name">标签研究</div>
+      <div class="module-en">Hashtag Research</div>
+      <div class="module-desc">话题标签研究与优化，分析标签热度、竞争度与关联性，辅助内容标签策略制定。</div>
+      <div class="module-skills">
+        <span class="skill-badge api">hashtag-research</span>
+      </div>
+    </div>
+
+    <!-- 模块 4: 内容工作室 -->
+    <div class="module-card" data-color="green">
+      <div class="module-id">MODULE 04</div>
+      <div class="module-name">内容工作室</div>
+      <div class="module-en">Content Studio</div>
+      <div class="module-desc">AI 内容生成核心，支持小红书图文、脚本撰写、文案润色与社交卡片生成等多元化内容创作。</div>
+      <div class="module-skills">
+        <span class="skill-badge file">xhs-content</span>
+        <span class="skill-badge file">script-writer</span>
+        <span class="skill-badge file">humanizer-zh</span>
+        <span class="skill-badge file">guizang-social-card</span>
+        <span class="skill-badge file">video-content-alchemist</span>
+      </div>
+    </div>
+
+    <!-- 模块 5: 图片工作室 -->
+    <div class="module-card" data-color="pink">
+      <div class="module-id">MODULE 05</div>
+      <div class="module-name">图片工作室</div>
+      <div class="module-en">Image Studio</div>
+      <div class="module-desc">多引擎图片生成，支持 CogView、SDXL、DALL-E 及本地模型，灵活切换生成引擎满足不同风格需求。</div>
+      <div class="module-skills">
+        <span class="skill-badge local-model">CogView</span>
+        <span class="skill-badge local-model">SDXL</span>
+        <span class="skill-badge api">DALL-E</span>
+        <span class="skill-badge local-model">Local Engine</span>
+      </div>
+    </div>
+
+    <!-- 模块 6: 视频工作室 -->
+    <div class="module-card" data-color="red">
+      <div class="module-id">MODULE 06</div>
+      <div class="module-name">视频工作室</div>
+      <div class="module-en">Video Studio</div>
+      <div class="module-desc">视频内容生成与转录，支持视频脚本到成片的全流程制作及社交视频字幕自动转录。</div>
+      <div class="module-skills">
+        <span class="skill-badge file">video-content-alchemist</span>
+        <span class="skill-badge file">mrcarlsama-social-transcriber</span>
+      </div>
+    </div>
+
+    <!-- 模块 7: 发布队列 -->
+    <div class="module-card" data-color="orange">
+      <div class="module-id">MODULE 07</div>
+      <div class="module-name">发布队列</div>
+      <div class="module-en">Publish Queue</div>
+      <div class="module-desc">内容发布调度系统，采用双引擎并行架构（xiaohongshu-skill + xhs-ops-skill），支持队列管理与定时发布。</div>
+      <div class="module-skills">
+        <span class="skill-badge file">xiaohongshu-skill</span>
+        <span class="skill-badge file">xhs-ops-skill</span>
+      </div>
+    </div>
+
+    <!-- 模块 8: 数据分析 -->
+    <div class="module-card" data-color="blue">
+      <div class="module-id">MODULE 08</div>
+      <div class="module-name">数据分析</div>
+      <div class="module-en">Analytics</div>
+      <div class="module-desc">创作者数据与竞品数据分析，提供粉丝增长、互动率、内容表现等多维度数据洞察。</div>
+      <div class="module-skills">
+        <span class="skill-badge api">creator-analytics</span>
+        <span class="skill-badge api">competitor-analysis</span>
+      </div>
+    </div>
+
+    <!-- 模块 9: 闭环管理 -->
+    <div class="module-card" data-color="purple">
+      <div class="module-id">MODULE 09</div>
+      <div class="module-name">闭环管理</div>
+      <div class="module-en">Pipeline Orchestrator</div>
+      <div class="module-desc">流水线编排引擎，串联 6 个阶段形成完整运营闭环，支持自动化触发与手动干预。</div>
+      <div class="module-skills">
+        <span class="skill-badge file" style="background: rgba(188,140,255,0.12); color: var(--accent-purple); border-color: rgba(188,140,255,0.25);">pipeline-orchestrator</span>
+        <span class="skill-badge file" style="background: rgba(188,140,255,0.12); color: var(--accent-purple); border-color: rgba(188,140,255,0.25);">6-stage-loop</span>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<!-- ==================== 5. 流水线 ==================== -->
+<section id="pipeline">
+  <div class="section-header">
+    <span class="section-num">05</span>
+    <h2>运营流水线 (Pipeline)</h2>
+  </div>
+  <p class="section-desc">6 阶段闭环流水线，从趋势发现到迭代优化，实现内容运营全自动化。</p>
+
+  <!-- SVG 流水线图 -->
+  <div class="arch-diagram" style="margin-top: 24px;">
+    <h3><span class="dot" style="background: var(--accent-orange);"></span>Pipeline 6 阶段流程图</h3>
+    <svg width="1000" height="200" viewBox="0 0 1000 200" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <linearGradient id="stageGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+          <stop offset="0%" style="stop-color:#1f6feb;stop-opacity:0.3"/>
+          <stop offset="50%" style="stop-color:#8957e5;stop-opacity:0.2"/>
+          <stop offset="100%" style="stop-color:#3fb950;stop-opacity:0.3"/>
+        </linearGradient>
+      </defs>
+
+      <!-- 6 stages -->
+      <!-- Stage 1 -->
+      <rect x="10" y="50" width="140" height="90" rx="10" fill="#161b22" stroke="#58a6ff" stroke-width="1.5" stroke-opacity="0.5"/>
+      <circle cx="80" cy="75" r="16" fill="#1f6feb"/>
+      <text x="80" y="80" text-anchor="middle" fill="#fff" font-size="13" font-weight="700">1</text>
+      <text x="80" y="110" text-anchor="middle" fill="#e6edf3" font-size="12" font-weight="700">趋势发现</text>
+      <text x="80" y="128" text-anchor="middle" fill="#6e7681" font-size="9" font-family="monospace">TREND_DISCOVERY</text>
+
+      <!-- Arrow -->
+      <path d="M 155 95 L 170 95" stroke="#58a6ff" stroke-width="2" fill="none" marker-end="url(#ah1)"/>
+      <defs><marker id="ah1" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto"><polygon points="0,0 8,4 0,8" fill="#58a6ff"/></marker></defs>
+
+      <!-- Stage 2 -->
+      <rect x="175" y="50" width="140" height="90" rx="10" fill="#161b22" stroke="#bc8cff" stroke-width="1.5" stroke-opacity="0.5"/>
+      <circle cx="245" cy="75" r="16" fill="#8957e5"/>
+      <text x="245" y="80" text-anchor="middle" fill="#fff" font-size="13" font-weight="700">2</text>
+      <text x="245" y="110" text-anchor="middle" fill="#e6edf3" font-size="12" font-weight="700">标签研究</text>
+      <text x="245" y="128" text-anchor="middle" fill="#6e7681" font-size="9" font-family="monospace">HASHTAG_RESEARCH</text>
+
+      <!-- Arrow -->
+      <path d="M 320 95 L 335 95" stroke="#bc8cff" stroke-width="2" fill="none" marker-end="url(#ah2)"/>
+      <defs><marker id="ah2" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto"><polygon points="0,0 8,4 0,8" fill="#bc8cff"/></marker></defs>
+
+      <!-- Stage 3 -->
+      <rect x="340" y="50" width="140" height="90" rx="10" fill="#161b22" stroke="#3fb950" stroke-width="1.5" stroke-opacity="0.5"/>
+      <circle cx="410" cy="75" r="16" fill="#238636"/>
+      <text x="410" y="80" text-anchor="middle" fill="#fff" font-size="13" font-weight="700">3</text>
+      <text x="410" y="110" text-anchor="middle" fill="#e6edf3" font-size="12" font-weight="700">内容生成</text>
+      <text x="410" y="128" text-anchor="middle" fill="#6e7681" font-size="9" font-family="monospace">CONTENT_GENERATION</text>
+
+      <!-- Arrow -->
+      <path d="M 485 95 L 500 95" stroke="#3fb950" stroke-width="2" fill="none" marker-end="url(#ah3)"/>
+      <defs><marker id="ah3" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto"><polygon points="0,0 8,4 0,8" fill="#3fb950"/></marker></defs>
+
+      <!-- Stage 4 -->
+      <rect x="505" y="50" width="140" height="90" rx="10" fill="#161b22" stroke="#d29922" stroke-width="1.5" stroke-opacity="0.5"/>
+      <circle cx="575" cy="75" r="16" fill="#d29922"/>
+      <text x="575" y="80" text-anchor="middle" fill="#fff" font-size="13" font-weight="700">4</text>
+      <text x="575" y="110" text-anchor="middle" fill="#e6edf3" font-size="12" font-weight="700">内容发布</text>
+      <text x="575" y="128" text-anchor="middle" fill="#6e7681" font-size="9" font-family="monospace">PUBLISHING</text>
+
+      <!-- Arrow -->
+      <path d="M 650 95 L 665 95" stroke="#d29922" stroke-width="2" fill="none" marker-end="url(#ah4)"/>
+      <defs><marker id="ah4" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto"><polygon points="0,0 8,4 0,8" fill="#d29922"/></marker></defs>
+
+      <!-- Stage 5 -->
+      <rect x="670" y="50" width="140" height="90" rx="10" fill="#161b22" stroke="#f778ba" stroke-width="1.5" stroke-opacity="0.5"/>
+      <circle cx="740" cy="75" r="16" fill="#db61a2"/>
+      <text x="740" y="80" text-anchor="middle" fill="#fff" font-size="13" font-weight="700">5</text>
+      <text x="740" y="110" text-anchor="middle" fill="#e6edf3" font-size="12" font-weight="700">效果追踪</text>
+      <text x="740" y="128" text-anchor="middle" fill="#6e7681" font-size="9" font-family="monospace">PERFORMANCE_TRACKING</text>
+
+      <!-- Arrow -->
+      <path d="M 815 95 L 830 95" stroke="#f778ba" stroke-width="2" fill="none" marker-end="url(#ah5)"/>
+      <defs><marker id="ah5" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto"><polygon points="0,0 8,4 0,8" fill="#f778ba"/></marker></defs>
+
+      <!-- Stage 6 -->
+      <rect x="835" y="50" width="140" height="90" rx="10" fill="#161b22" stroke="#39c5cf" stroke-width="1.5" stroke-opacity="0.5"/>
+      <circle cx="905" cy="75" r="16" fill="#1a9e9e"/>
+      <text x="905" y="80" text-anchor="middle" fill="#fff" font-size="13" font-weight="700">6</text>
+      <text x="905" y="110" text-anchor="middle" fill="#e6edf3" font-size="12" font-weight="700">迭代优化</text>
+      <text x="905" y="128" text-anchor="middle" fill="#6e7681" font-size="9" font-family="monospace">ITERATION</text>
+
+      <!-- Loop back arrow -->
+      <path d="M 905 145 Q 905 175 500 175 Q 80 175 80 145" stroke="#6e7681" stroke-width="1.5" stroke-dasharray="6,4" fill="none" marker-end="url(#ah6)"/>
+      <defs><marker id="ah6" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto"><polygon points="0,0 8,4 0,8" fill="#6e7681"/></marker></defs>
+      <text x="500" y="192" text-anchor="middle" fill="#6e7681" font-size="10" font-style="italic">迭代回路 / Feedback Loop</text>
+    </svg>
+  </div>
+
+  <!-- 阶段卡片 -->
+  <div class="card-grid cols-3" style="margin-top: 16px;">
+    <div class="card" style="border-top: 3px solid var(--accent-blue);">
+      <div style="font-family: var(--font-mono); font-size: 11px; color: var(--accent-blue); margin-bottom: 6px;">STAGE 1</div>
+      <h4 style="font-size: 15px; margin-bottom: 6px;">趋势发现</h4>
+      <code style="font-size: 11px; color: var(--text-muted); display: block; margin-bottom: 8px;">TREND_DISCOVERY</code>
+      <p style="font-size: 13px; color: var(--text-secondary);">通过多平台热点扫描与社交情报雷达，发现当前热门趋势与潜在爆款话题，为内容创作提供方向指引。</p>
+    </div>
+    <div class="card" style="border-top: 3px solid var(--accent-purple);">
+      <div style="font-family: var(--font-mono); font-size: 11px; color: var(--accent-purple); margin-bottom: 6px;">STAGE 2</div>
+      <h4 style="font-size: 15px; margin-bottom: 6px;">标签研究</h4>
+      <code style="font-size: 11px; color: var(--text-muted); display: block; margin-bottom: 8px;">HASHTAG_RESEARCH</code>
+      <p style="font-size: 13px; color: var(--text-secondary);">基于发现的趋势，研究相关话题标签的热度、竞争度与关联性，筛选出最优标签组合策略。</p>
+    </div>
+    <div class="card" style="border-top: 3px solid var(--accent-green);">
+      <div style="font-family: var(--font-mono); font-size: 11px; color: var(--accent-green); margin-bottom: 6px;">STAGE 3</div>
+      <h4 style="font-size: 15px; margin-bottom: 6px;">内容生成</h4>
+      <code style="font-size: 11px; color: var(--text-muted); display: block; margin-bottom: 8px;">CONTENT_GENERATION</code>
+      <p style="font-size: 13px; color: var(--text-secondary);">调用内容工作室、图片工作室、视频工作室，基于趋势与标签自动生成图文、图片与视频内容。</p>
+    </div>
+    <div class="card" style="border-top: 3px solid var(--accent-orange);">
+      <div style="font-family: var(--font-mono); font-size: 11px; color: var(--accent-orange); margin-bottom: 6px;">STAGE 4</div>
+      <h4 style="font-size: 15px; margin-bottom: 6px;">内容发布</h4>
+      <code style="font-size: 11px; color: var(--text-muted); display: block; margin-bottom: 8px;">PUBLISHING</code>
+      <p style="font-size: 13px; color: var(--text-secondary);">将生成的内容加入发布队列，通过双引擎并行架构执行定时发布，支持小红书等多平台分发。</p>
+    </div>
+    <div class="card" style="border-top: 3px solid var(--accent-pink);">
+      <div style="font-family: var(--font-mono); font-size: 11px; color: var(--accent-pink); margin-bottom: 6px;">STAGE 5</div>
+      <h4 style="font-size: 15px; margin-bottom: 6px;">效果追踪</h4>
+      <code style="font-size: 11px; color: var(--text-muted); display: block; margin-bottom: 8px;">PERFORMANCE_TRACKING</code>
+      <p style="font-size: 13px; color: var(--text-secondary);">追踪已发布内容的数据表现，包括阅读量、互动率、粉丝增长等核心指标，形成效果数据面板。</p>
+    </div>
+    <div class="card" style="border-top: 3px solid var(--accent-cyan);">
+      <div style="font-family: var(--font-mono); font-size: 11px; color: var(--accent-cyan); margin-bottom: 6px;">STAGE 6</div>
+      <h4 style="font-size: 15px; margin-bottom: 6px;">迭代优化</h4>
+      <code style="font-size: 11px; color: var(--text-muted); display: block; margin-bottom: 8px;">ITERATION</code>
+      <p style="font-size: 13px; color: var(--text-secondary);">基于效果数据分析，优化下一轮趋势发现与内容策略，形成持续改进的运营闭环。</p>
+    </div>
+  </div>
+</section>
+
+<!-- ==================== 6. API 路由 ==================== -->
+<section id="api">
+  <div class="section-header">
+    <span class="section-num">06</span>
+    <h2>API 路由 (14 Routes)</h2>
+  </div>
+  <p class="section-desc">后端提供 14 个 RESTful API 路由，所有路由统一使用 /api/ 前缀。</p>
+
+  <div class="table-wrapper" style="margin-top: 24px;">
+    <table>
+      <thead>
+        <tr>
+          <th style="width: 60px;">#</th>
+          <th style="width: 80px;">方法</th>
+          <th>路由路径</th>
+          <th>功能描述</th>
+          <th>对应模块</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>01</td>
+          <td><span class="method GET">GET</span></td>
+          <td><code>/api/trends</code></td>
+          <td>获取趋势热点列表</td>
+          <td>趋势发现</td>
+        </tr>
+        <tr>
+          <td>02</td>
+          <td><span class="method POST">POST</span></td>
+          <td><code>/api/trends/discover</code></td>
+          <td>触发多平台趋势扫描</td>
+          <td>趋势发现</td>
+        </tr>
+        <tr>
+          <td>03</td>
+          <td><span class="method GET">GET</span></td>
+          <td><code>/api/radar/feeds</code></td>
+          <td>获取情报雷达信息流</td>
+          <td>情报中心</td>
+        </tr>
+        <tr>
+          <td>04</td>
+          <td><span class="method POST">POST</span></td>
+          <td><code>/api/radar/analyze</code></td>
+          <td>执行情报深度分析</td>
+          <td>情报中心</td>
+        </tr>
+        <tr>
+          <td>05</td>
+          <td><span class="method GET">GET</span></td>
+          <td><code>/api/hashtags/research</code></td>
+          <td>获取标签研究数据</td>
+          <td>标签研究</td>
+        </tr>
+        <tr>
+          <td>06</td>
+          <td><span class="method POST">POST</span></td>
+          <td><code>/api/content/generate</code></td>
+          <td>生成内容（图文/脚本/文案）</td>
+          <td>内容工作室</td>
+        </tr>
+        <tr>
+          <td>07</td>
+          <td><span class="method POST">POST</span></td>
+          <td><code>/api/images/generate</code></td>
+          <td>多引擎图片生成</td>
+          <td>图片工作室</td>
+        </tr>
+        <tr>
+          <td>08</td>
+          <td><span class="method POST">POST</span></td>
+          <td><code>/api/videos/generate</code></td>
+          <td>视频内容生成</td>
+          <td>视频工作室</td>
+        </tr>
+        <tr>
+          <td>09</td>
+          <td><span class="method GET">GET</span></td>
+          <td><code>/api/publish/queue</code></td>
+          <td>获取发布队列列表</td>
+          <td>发布队列</td>
+        </tr>
+        <tr>
+          <td>10</td>
+          <td><span class="method POST">POST</span></td>
+          <td><code>/api/publish/execute</code></td>
+          <td>执行发布任务</td>
+          <td>发布队列</td>
+        </tr>
+        <tr>
+          <td>11</td>
+          <td><span class="method GET">GET</span></td>
+          <td><code>/api/analytics/creators</code></td>
+          <td>获取创作者分析数据</td>
+          <td>数据分析</td>
+        </tr>
+        <tr>
+          <td>12</td>
+          <td><span class="method GET">GET</span></td>
+          <td><code>/api/analytics/competitors</code></td>
+          <td>获取竞品分析报告</td>
+          <td>数据分析</td>
+        </tr>
+        <tr>
+          <td>13</td>
+          <td><span class="method GET">GET</span></td>
+          <td><code>/api/pipeline/status</code></td>
+          <td>获取流水线运行状态</td>
+          <td>闭环管理</td>
+        </tr>
+        <tr>
+          <td>14</td>
+          <td><span class="method POST">POST</span></td>
+          <td><code>/api/pipeline/trigger</code></td>
+          <td>触发流水线执行</td>
+          <td>闭环管理</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<!-- ==================== 7. 数据库表 ==================== -->
+<section id="database">
+  <div class="section-header">
+    <span class="section-num">07</span>
+    <h2>数据库表结构 (11 Tables)</h2>
+  </div>
+  <p class="section-desc">SQLite 数据库采用 WAL 模式，共 11 张业务表，通过 better-sqlite3 同步驱动访问。</p>
+
+  <div class="table-wrapper" style="margin-top: 24px;">
+    <table>
+      <thead>
+        <tr>
+          <th style="width: 60px;">#</th>
+          <th style="width: 200px;">表名</th>
+          <th>中文名称</th>
+          <th>功能说明</th>
+          <th style="width: 120px;">关联模块</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>01</td>
+          <td><code>trends</code></td>
+          <td>趋势数据表</td>
+          <td>存储多平台趋势热点数据，含热度值、来源平台、发现时间</td>
+          <td>趋势发现</td>
+        </tr>
+        <tr>
+          <td>02</td>
+          <td><code>radar_feeds</code></td>
+          <td>情报流表</td>
+          <td>存储社交情报雷达采集的信息流，含来源、内容摘要、情感标签</td>
+          <td>情报中心</td>
+        </tr>
+        <tr>
+          <td>03</td>
+          <td><code>hashtags</code></td>
+          <td>标签表</td>
+          <td>存储话题标签研究数据，含热度、竞争度、关联标签</td>
+          <td>标签研究</td>
+        </tr>
+        <tr>
+          <td>04</td>
+          <td><code>contents</code></td>
+          <td>内容表</td>
+          <td>存储 AI 生成的内容，含图文、脚本、文案等多类型内容</td>
+          <td>内容工作室</td>
+        </tr>
+        <tr>
+          <td>05</td>
+          <td><code>images</code></td>
+          <td>图片表</td>
+          <td>存储多引擎生成的图片记录，含引擎类型、文件路径、提示词</td>
+          <td>图片工作室</td>
+        </tr>
+        <tr>
+          <td>06</td>
+          <td><code>videos</code></td>
+          <td>视频表</td>
+          <td>存储视频生成与转录记录，含脚本、成片路径、字幕数据</td>
+          <td>视频工作室</td>
+        </tr>
+        <tr>
+          <td>07</td>
+          <td><code>publish_tasks</code></td>
+          <td>发布任务表</td>
+          <td>存储发布队列任务，含目标平台、计划时间、发布状态</td>
+          <td>发布队列</td>
+        </tr>
+        <tr>
+          <td>08</td>
+          <td><code>publish_logs</code></td>
+          <td>发布日志表</td>
+          <td>存储发布执行日志，含成功/失败记录、错误信息、时间戳</td>
+          <td>发布队列</td>
+        </tr>
+        <tr>
+          <td>09</td>
+          <td><code>analytics_records</code></td>
+          <td>分析记录表</td>
+          <td>存储创作者与竞品分析数据，含粉丝数、互动率、增长趋势</td>
+          <td>数据分析</td>
+        </tr>
+        <tr>
+          <td>10</td>
+          <td><code>pipeline_runs</code></td>
+          <td>流水线运行表</td>
+          <td>存储流水线执行记录，含 6 阶段状态、开始/结束时间、结果</td>
+          <td>闭环管理</td>
+        </tr>
+        <tr>
+          <td>11</td>
+          <td><code>skill_configs</code></td>
+          <td>技能配置表</td>
+          <td>存储技能配置信息，含技能类型、参数、LLM 模型绑定</td>
+          <td>全局</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="info-box" style="margin-top: 16px;">
+    <span class="info-icon">i</span>
+    <div class="info-text">
+      <strong>WAL 模式：</strong>Write-Ahead Logging 模式允许多个读操作与一个写操作并发执行，显著提升数据库读写性能，适合内容运营平台高频读写场景。
+    </div>
+  </div>
+</section>
+
+<!-- ==================== 8. 部署指南 ==================== -->
+<section id="deploy">
+  <div class="section-header">
+    <span class="section-num">08</span>
+    <h2>部署指南</h2>
+  </div>
+  <p class="section-desc">支持开发模式与生产模式部署，推荐使用 PM2 进行进程管理。</p>
+
+  <div class="deploy-steps" style="margin-top: 24px;">
+    <div class="deploy-step">
+      <div class="step-num">1</div>
+      <div class="step-body">
+        <h4>环境准备</h4>
+        <p>确保已安装 Node.js 18+、npm/pnpm 包管理器。克隆项目代码并安装依赖。</p>
+        <div class="code-block">
+<span class="comment"># 安装后端依赖</span>
+<span class="cmd">cd</span> backend && npm install
+<span class="comment"># 安装前端依赖</span>
+<span class="cmd">cd</span> ../frontend && npm install</div>
+      </div>
+    </div>
+
+    <div class="deploy-step">
+      <div class="step-num">2</div>
+      <div class="step-body">
+        <h4>开发模式启动 (一键脚本)</h4>
+        <p>使用项目根目录下的 <code style="font-family: var(--font-mono); color: var(--accent-cyan);">start-all-services.ps1</code> 脚本同时启动前后端服务。</p>
+        <div class="code-block">
+<span class="comment"># PowerShell 一键启动所有服务</span>
+<span class="cmd">.\start-all-services.ps1</span>
+<span class="comment"># 后端启动于 http://localhost:3100</span>
+<span class="comment"># 前端启动于 http://localhost:5180</span></div>
+      </div>
+    </div>
+
+    <div class="deploy-step">
+      <div class="step-num">3</div>
+      <div class="step-body">
+        <h4>生产模式部署 (PM2)</h4>
+        <p>使用 PM2 进程管理器进行生产部署，支持自动重启、日志管理与负载监控。</p>
+        <div class="code-block">
+<span class="comment"># 安装 PM2 全局</span>
+<span class="cmd">npm</span> install -g pm2
+<span class="comment"># 构建前端</span>
+<span class="cmd">cd</span> frontend && npm run build
+<span class="comment"># 构建后端</span>
+<span class="cmd">cd</span> ../backend && npm run build
+<span class="comment"># PM2 启动后端服务</span>
+<span class="cmd">pm2</span> start dist/index.js --name <span class="flag">"content-ops-api"</span>
+<span class="comment"># PM2 启动前端静态服务 (可选)</span>
+<span class="cmd">pm2</span> serve ../frontend/dist 5180 --name <span class="flag">"content-ops-web"</span>
+<span class="comment"># 保存 PM2 配置</span>
+<span class="cmd">pm2</span> save</div>
+      </div>
+    </div>
+
+    <div class="deploy-step">
+      <div class="step-num">4</div>
+      <div class="step-body">
+        <h4>端口配置</h4>
+        <p>后端 API 服务运行在端口 <strong style="color: var(--accent-blue);">3100</strong>，前端开发服务器运行在端口 <strong style="color: var(--accent-purple);">5180</strong>。确保端口未被占用。</p>
+        <div class="code-block">
+<span class="comment"># 后端端口: 3100 (Express API)</span>
+<span class="comment"># 前端端口: 5180 (Vite Dev Server)</span>
+<span class="comment"># API 前缀: /api/</span>
+<span class="comment"># 前端代理: Vite proxy -> http://localhost:3100</span></div>
+      </div>
+    </div>
+
+    <div class="deploy-step">
+      <div class="step-num">5</div>
+      <div class="step-body">
+        <h4>健康检查与监控</h4>
+        <p>启动后通过 PM2 监控面板查看服务运行状态，确保前后端服务正常运行。</p>
+        <div class="code-block">
+<span class="comment"># 查看进程状态</span>
+<span class="cmd">pm2</span> status
+<span class="comment"># 查看实时日志</span>
+<span class="cmd">pm2</span> logs
+<span class="comment"># 打开监控面板</span>
+<span class="cmd">pm2</span> monit
+<span class="comment"># 验证后端 API</span>
+<span class="cmd">curl</span> http://localhost:3100/api/pipeline/status</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ==================== 9. 技能类型 ==================== -->
+<section id="skills">
+  <div class="section-header">
+    <span class="section-num">09</span>
+    <h2>技能类型 (Skill Types)</h2>
+  </div>
+  <p class="section-desc">平台技能系统分为三种类型，以颜色区分，支持灵活组合与调度。</p>
+
+  <div class="card-grid cols-3" style="margin-top: 24px;">
+    <div class="card skill-type-card file">
+      <div class="type-icon">F</div>
+      <div class="type-name" style="color: var(--accent-blue);">file</div>
+      <div class="type-desc">
+        基于文件脚本的技能，通过本地脚本文件执行任务。无外部依赖，运行速度快，适合内容生成、脚本撰写等本地处理场景。
+      </div>
+      <div style="margin-top: 12px; display: flex; flex-wrap: wrap; gap: 4px; justify-content: center;">
+        <span class="skill-badge file">xhs-content</span>
+        <span class="skill-badge file">script-writer</span>
+        <span class="skill-badge file">humanizer-zh</span>
+      </div>
+    </div>
+
+    <div class="card skill-type-card api">
+      <div class="type-icon">A</div>
+      <div class="type-name" style="color: var(--accent-purple);">api</div>
+      <div class="type-desc">
+        基于外部 API 调用的技能，通过 HTTP 请求对接第三方服务。支持多平台数据采集与云端 AI 能力调用。
+      </div>
+      <div style="margin-top: 12px; display: flex; flex-wrap: wrap; gap: 4px; justify-content: center;">
+        <span class="skill-badge api">trend-research</span>
+        <span class="skill-badge api">douyin</span>
+        <span class="skill-badge api">creator-analytics</span>
+      </div>
+    </div>
+
+    <div class="card skill-type-card local-model">
+      <div class="type-icon">L</div>
+      <div class="type-name" style="color: var(--accent-green);">local-model</div>
+      <div class="type-desc">
+        基于本地 AI 模型的技能，通过 Ollama 等本地推理引擎运行。数据隐私安全，无 API 费用，适合图片生成与模型推理。
+      </div>
+      <div style="margin-top: 12px; display: flex; flex-wrap: wrap; gap: 4px; justify-content: center;">
+        <span class="skill-badge local-model">CogView</span>
+        <span class="skill-badge local-model">SDXL</span>
+        <span class="skill-badge local-model">Local Engine</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="info-box" style="margin-top: 16px;">
+    <span class="info-icon">i</span>
+    <div class="info-text">
+      <strong>技能调度：</strong>流水线编排引擎根据任务需求自动选择合适的技能类型。file 类型优先执行（低延迟），api 类型用于外部数据获取，local-model 类型用于需要隐私保护的 AI 推理任务。三种类型可自由组合，支持同一模块内混合调用。
+    </div>
+  </div>
+</section>
+
+<!-- ==================== 10. LLM 配置 ==================== -->
+<section id="llm">
+  <div class="section-header">
+    <span class="section-num">10</span>
+    <h2>LLM 配置</h2>
+  </div>
+  <p class="section-desc">支持四种 LLM 部署模式，满足不同场景下的成本、性能与隐私需求。</p>
+
+  <div class="card-grid cols-2" style="margin-top: 24px;">
+    <div class="card llm-config-card local">
+      <div class="llm-header">
+        <span class="llm-badge">LOCAL</span>
+        <span class="llm-name">本地模型</span>
+      </div>
+      <div class="llm-detail">
+        基于 <strong>Ollama</strong> 运行本地大语言模型，数据完全不出本机，零 API 费用。适合对数据隐私要求高的场景及离线环境。<br><br>
+        <strong>支持模型：</strong>Llama 3、Qwen、ChatGLM 等开源模型<br>
+        <strong>适用场景：</strong>内容生成、文案润色、本地推理
+      </div>
+    </div>
+
+    <div class="card llm-config-card cloud">
+      <div class="llm-header">
+        <span class="llm-badge">CLOUD</span>
+        <span class="llm-name">云端模型</span>
+      </div>
+      <div class="llm-detail">
+        对接 <strong>GLM</strong>（智谱 AI）与 <strong>DeepSeek</strong> 云端 API，提供高质量推理能力，按量计费。适合需要强推理能力的复杂任务。<br><br>
+        <strong>支持模型：</strong>GLM-4、DeepSeek-V3、DeepSeek-R1<br>
+        <strong>适用场景：</strong>深度分析、脚本创作、趋势预测
+      </div>
+    </div>
+
+    <div class="card llm-config-card hybrid">
+      <div class="llm-header">
+        <span class="llm-badge">HYBRID</span>
+        <span class="llm-name">混合模式</span>
+      </div>
+      <div class="llm-detail">
+        <strong>本地 + 云端</strong>智能调度，根据任务复杂度自动选择最优模型。简单任务走本地（低成本），复杂任务走云端（高质量），兼顾性能与成本。<br><br>
+        <strong>调度策略：</strong>任务分级路由 / 负载均衡 / 故障自动切换<br>
+        <strong>适用场景：</strong>全流水线运行、大规模内容生产
+      </div>
+    </div>
+
+    <div class="card llm-config-card custom">
+      <div class="llm-header">
+        <span class="llm-badge">CUSTOM</span>
+        <span class="llm-name">自定义模型</span>
+      </div>
+      <div class="llm-detail">
+        支持用户<strong>自定义配置</strong> LLM 模型端点，可接入私有部署模型或第三方兼容 OpenAI 接口的服务，灵活适配各类推理后端。<br><br>
+        <strong>配置方式：</strong>skill_configs 表存储模型绑定 / 自定义 API Base URL<br>
+        <strong>适用场景：</strong>企业私有化部署、自定义模型接入
+      </div>
+    </div>
+  </div>
+
+  <!-- LLM 配置图 -->
+  <div class="arch-diagram">
+    <h3><span class="dot" style="background: var(--accent-orange);"></span>LLM 调度架构</h3>
+    <svg width="700" height="240" viewBox="0 0 700 240" xmlns="http://www.w3.org/2000/svg">
+      <!-- Center: Skill Engine -->
+      <rect x="280" y="90" width="140" height="60" rx="10" fill="#21262d" stroke="#d29922" stroke-width="2"/>
+      <text x="350" y="118" text-anchor="middle" fill="#d29922" font-size="13" font-weight="700">Skill Engine</text>
+      <text x="350" y="136" text-anchor="middle" fill="#8b949e" font-size="10" font-family="monospace">LLM Router</text>
+
+      <!-- Local -->
+      <rect x="30" y="30" width="140" height="50" rx="8" fill="#161b22" stroke="#3fb950" stroke-width="1.5" stroke-opacity="0.5"/>
+      <text x="100" y="52" text-anchor="middle" fill="#3fb950" font-size="13" font-weight="700">LOCAL</text>
+      <text x="100" y="68" text-anchor="middle" fill="#8b949e" font-size="10" font-family="monospace">Ollama</text>
+      <path d="M 170 55 L 275 110" stroke="#3fb950" stroke-width="1.5" stroke-opacity="0.4" fill="none" stroke-dasharray="4,3"/>
+
+      <!-- Cloud -->
+      <rect x="280" y="30" width="140" height="50" rx="8" fill="#161b22" stroke="#bc8cff" stroke-width="1.5" stroke-opacity="0.5"/>
+      <text x="350" y="52" text-anchor="middle" fill="#bc8cff" font-size="13" font-weight="700">CLOUD</text>
+      <text x="350" y="68" text-anchor="middle" fill="#8b949e" font-size="10" font-family="monospace">GLM / DeepSeek</text>
+      <path d="M 350 80 L 350 88" stroke="#bc8cff" stroke-width="1.5" stroke-opacity="0.4" fill="none" stroke-dasharray="4,3"/>
+
+      <!-- Custom -->
+      <rect x="530" y="30" width="140" height="50" rx="8" fill="#161b22" stroke="#39c5cf" stroke-width="1.5" stroke-opacity="0.5"/>
+      <text x="600" y="52" text-anchor="middle" fill="#39c5cf" font-size="13" font-weight="700">CUSTOM</text>
+      <text x="600" y="68" text-anchor="middle" fill="#8b949e" font-size="10" font-family="monospace">User Models</text>
+      <path d="M 530 55 L 425 110" stroke="#39c5cf" stroke-width="1.5" stroke-opacity="0.4" fill="none" stroke-dasharray="4,3"/>
+
+      <!-- Hybrid label -->
+      <rect x="280" y="170" width="140" height="50" rx="8" fill="#161b22" stroke="#d29922" stroke-width="1.5" stroke-opacity="0.5"/>
+      <text x="350" y="192" text-anchor="middle" fill="#d29922" font-size="13" font-weight="700">HYBRID</text>
+      <text x="350" y="208" text-anchor="middle" fill="#8b949e" font-size="10" font-family="monospace">智能混合调度</text>
+      <path d="M 350 152 L 350 168" stroke="#d29922" stroke-width="1.5" stroke-opacity="0.4" fill="none" stroke-dasharray="4,3"/>
+    </svg>
+  </div>
+</section>
+
+<!-- ==================== Footer ==================== -->
+<footer>
+  <p>Content Ops Hub - 内容运营一体化平台 &nbsp;|&nbsp; Vue 3 + Express + TypeScript</p>
+  <p style="margin-top: 8px; color: var(--text-muted); font-size: 12px;">后端 :3100 &nbsp;|&nbsp; 前端 :5180 &nbsp;|&nbsp; SQLite WAL &nbsp;|&nbsp; 9 Modules &nbsp;|&nbsp; 6-Stage Pipeline</p>
+</footer>
+
+</body>
+</html>

@@ -1,0 +1,17 @@
+/* 主题：default — 简约灰 */
+.card-inner {
+  background: #ffffff;
+  color: #2d3748;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.06);
+}
+
+.cover-title { color: #1a202c; }
+.cover-subtitle { color: #4a5568; }
+
+.card-content h1 { color: #1a202c; }
+.card-content h2 { color: #2d3748; }
+.card-content h3 { color: #2d3748; }
+.card-content p { color: #4a5568; }
+.card-content li { color: #4a5568; }
+.card-content li::before { color: #a0aec0; }
+.card-content strong { color: #1a202c; }

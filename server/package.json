@@ -1,0 +1,40 @@
+{
+  "name": "server",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "powershell -NoProfile -ExecutionPolicy Bypass -File ../scripts/start-compatible-server.ps1 -Mode dev",
+    "serve": "powershell -NoProfile -ExecutionPolicy Bypass -File ../scripts/start-compatible-server.ps1 -Mode serve",
+    "build": "tsc",
+    "start": "powershell -NoProfile -ExecutionPolicy Bypass -File ../scripts/start-compatible-server.ps1 -Mode start",
+    "db:init": "ts-node --transpile-only src/db/init.ts",
+    "db:migrate-from-pipeline": "ts-node --transpile-only scripts/migrate-from-pipeline-db.ts",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage"
+  },
+  "dependencies": {
+    "axios": "^1.18.1",
+    "better-sqlite3": "^11.0.0",
+    "cors": "^2.8.5",
+    "cron-parser": "^5.6.2",
+    "dotenv": "^16.4.1",
+    "express": "^4.18.2",
+    "express-rate-limit": "^8.6.0",
+    "helmet": "^8.3.0",
+    "node-cron": "^3.0.3",
+    "playwright": "^1.63.0",
+    "winston": "^3.11.0"
+  },
+  "devDependencies": {
+    "@types/better-sqlite3": "^7.6.8",
+    "@types/cors": "^2.8.17",
+    "@types/express": "^4.17.21",
+    "@types/node": "^20.11.0",
+    "@types/node-cron": "^3.0.11",
+    "ts-node": "^10.9.2",
+    "ts-node-dev": "^2.0.0",
+    "typescript": "^5.3.3",
+    "vitest": "^4.1.10"
+  }
+}

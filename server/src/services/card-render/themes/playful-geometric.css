@@ -1,0 +1,39 @@
+/* 主题：playful-geometric — 几何活泼 */
+.card-inner {
+  background: linear-gradient(135deg, #ffecd2 0%, #fcb69f 50%, #ff9a9e 100%);
+  color: #2d3436;
+  position: relative;
+  overflow: hidden;
+}
+
+.card-inner::before {
+  content: "";
+  position: absolute;
+  width: 200px; height: 200px;
+  background: #ff6b6b;
+  border-radius: 50%;
+  top: -80px; right: -60px;
+  opacity: 0.3;
+}
+.card-inner::after {
+  content: "";
+  position: absolute;
+  width: 160px; height: 160px;
+  background: #4ecdc4;
+  bottom: -50px; left: -40px;
+  transform: rotate(45deg);
+  opacity: 0.3;
+}
+
+.cover-emoji { position: relative; z-index: 1; }
+.cover-title { color: #2d3436; position: relative; z-index: 1; }
+.cover-subtitle { color: #636e72; position: relative; z-index: 1; }
+
+.card-content { position: relative; z-index: 1; }
+.card-content h1 { color: #d63031; }
+.card-content h2 { color: #00b894; }
+.card-content h3 { color: #6c5ce7; }
+.card-content p { color: #2d3436; }
+.card-content li { color: #2d3436; }
+.card-content li::before { color: #e17055; }
+.card-content strong { color: #d63031; background: rgba(255,236,210,0.5); padding: 2px 8px; border-radius: 8px; }

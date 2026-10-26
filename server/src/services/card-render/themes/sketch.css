@@ -1,0 +1,34 @@
+/* 主题：sketch — 手绘素描 */
+.card-inner {
+  background: #fdfbf7;
+  color: #3d3d3d;
+  border: 3px solid #2d2d2d;
+  box-shadow: 6px 6px 0 #2d2d2d;
+  position: relative;
+}
+
+.card-inner::before {
+  content: "";
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background-image:
+    repeating-linear-gradient(0deg, transparent, transparent 28px, rgba(0,0,0,0.03) 28px, rgba(0,0,0,0.03) 29px);
+  pointer-events: none;
+  border-radius: 24px;
+}
+
+.cover-emoji { filter: drop-shadow(2px 2px 0 rgba(0,0,0,0.1)); }
+.cover-title {
+  color: #1a1a1a;
+  letter-spacing: -1px;
+  text-shadow: 2px 2px 0 rgba(0,0,0,0.05);
+}
+.cover-subtitle { color: #5a5a5a; }
+
+.card-content h1 { color: #1a1a1a; border-bottom: 3px solid #2d2d2d; padding-bottom: 12px; display: inline-block; }
+.card-content h2 { color: #2d2d2d; }
+.card-content h3 { color: #3d3d3d; }
+.card-content p { color: #4a4a4a; }
+.card-content li { color: #4a4a4a; }
+.card-content li::before { color: #888; content: "→"; font-size: 28px; }
+.card-content strong { color: #1a1a1a; text-decoration: underline; text-decoration-style: wavy; text-decoration-color: #ffd93d; }

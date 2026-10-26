@@ -1,0 +1,67 @@
+/* 主题：terminal — 终端极客 */
+.card-inner {
+  background: #0d1117;
+  color: #00ff41;
+  font-family: "JetBrains Mono", "Fira Code", "Consolas", "Courier New", monospace;
+  border: 2px solid #00ff41;
+  box-shadow: 0 0 30px rgba(0, 255, 65, 0.2), inset 0 0 30px rgba(0, 255, 65, 0.05);
+  position: relative;
+}
+
+.card-inner::before {
+  content: "";
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 40px;
+  background: #161b22;
+  border-radius: 22px 22px 0 0;
+  border-bottom: 2px solid #00ff41;
+}
+
+.card-inner::after {
+  content: "● ● ●";
+  position: absolute;
+  top: 12px;
+  left: 24px;
+  color: #ff5f56;
+  font-size: 16px;
+  letter-spacing: 8px;
+  z-index: 1;
+}
+
+.cover-emoji { position: relative; z-index: 1; margin-top: 30px; }
+.cover-title {
+  color: #00ff41;
+  font-family: "JetBrains Mono", "Consolas", monospace;
+  font-weight: 700;
+  position: relative;
+  z-index: 1;
+  text-shadow: 0 0 10px rgba(0, 255, 65, 0.5);
+}
+.cover-title::before { content: "> "; opacity: 0.7; }
+.cover-subtitle {
+  color: #58a6ff;
+  font-family: "JetBrains Mono", "Consolas", monospace;
+  position: relative;
+  z-index: 1;
+}
+
+.card-content { padding-top: 20px; }
+.card-content h1 {
+  color: #00ff41;
+  font-family: "JetBrains Mono", "Consolas", monospace;
+  text-shadow: 0 0 8px rgba(0, 255, 65, 0.4);
+}
+.card-content h1::before { content: "$ "; color: #58a6ff; }
+.card-content h2 { color: #58a6ff; font-family: "JetBrains Mono", monospace; }
+.card-content h2::before { content: "## "; opacity: 0.5; }
+.card-content h3 { color: #d2a8ff; font-family: "JetBrains Mono", monospace; }
+.card-content p { color: #00ff41; font-family: "JetBrains Mono", monospace; font-size: 28px; }
+.card-content li { color: #00ff41; font-family: "JetBrains Mono", monospace; font-size: 28px; }
+.card-content li::before { content: "└─"; color: #58a6ff; font-size: 24px; }
+.card-content strong {
+  color: #ffd166;
+  font-family: "JetBrains Mono", monospace;
+  font-weight: 600;
+  text-shadow: 0 0 6px rgba(255, 209, 102, 0.4);
+}

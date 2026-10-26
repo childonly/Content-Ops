@@ -1,0 +1,65 @@
+# Dependencies
+node_modules/
+*/node_modules/
+
+# Build output
+dist/
+*/dist/
+server/dist/
+
+# Database
+*.db
+*.db-journal
+server/data/
+
+# Environment
+.env
+.env.local
+*/.env
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+
+# Runtime browser profiles and downloaded media
+server/scripts/data/browser-data/
+server/scripts/data/edge-data/
+
+# Playwright browsers (large binaries)
+.playwright-browsers/
+server/.playwright-browsers/
+
+# Generated data and media
+server/data/generated_images/
+server/data/transcriptions/
+server/uploads/
+data/
+
+# Database pre-migration backups
+*.pre-migrate-*
+
+# Trae (IDE config, keep .trae/rules)
+.trae/cache/
+.trae/user/
+.trae/settings.json
+
+# PM2 / process manager
+ecosystem.config.cjs
+pm2-autostart.ps1
+pm2-watchdog.ps1
+pm2-windows-startup.vbs
+
+# Debug
+debug.log
+check_db.cjs

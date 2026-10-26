@@ -1,0 +1,40 @@
+/* 主题：retro — 复古怀旧 */
+.card-inner {
+  background: #f5e6d3;
+  color: #4a3728;
+  position: relative;
+}
+
+.card-inner::before {
+  content: "";
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background-image:
+    radial-gradient(circle at 20% 80%, rgba(139, 90, 43, 0.1) 0%, transparent 50%),
+    radial-gradient(circle at 80% 20%, rgba(139, 90, 43, 0.08) 0%, transparent 50%);
+  border-radius: 24px;
+  pointer-events: none;
+}
+
+.cover-title {
+  color: #8b4513;
+  font-family: Georgia, "Times New Roman", serif;
+  letter-spacing: 3px;
+}
+.cover-subtitle { color: #a0522d; font-style: italic; }
+
+.card-content h1 {
+  color: #8b4513;
+  font-family: Georgia, "Times New Roman", serif;
+  text-align: center;
+  border-top: 2px solid #c4a35a;
+  border-bottom: 2px solid #c4a35a;
+  padding: 16px 0;
+  letter-spacing: 2px;
+}
+.card-content h2 { color: #a0522d; font-family: Georgia, serif; }
+.card-content h3 { color: #8b6914; font-family: Georgia, serif; }
+.card-content p { color: #5d4037; font-family: Georgia, serif; }
+.card-content li { color: #5d4037; font-family: Georgia, serif; }
+.card-content li::before { color: #c4a35a; content: "❧"; font-size: 24px; }
+.card-content strong { color: #8b4513; font-family: Georgia, serif; font-weight: bold; }

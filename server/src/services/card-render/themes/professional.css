@@ -1,0 +1,20 @@
+/* 主题：professional — 专业商务 */
+.card-inner {
+  background: linear-gradient(135deg, #1e3a5f 0%, #2c5282 100%);
+  color: #ffffff;
+}
+
+.cover-title { color: #ffffff; letter-spacing: 2px; }
+.cover-subtitle { color: #90cdf4; }
+
+.card-content h1 {
+  color: #ffffff;
+  border-left: 6px solid #63b3ed;
+  padding-left: 20px;
+}
+.card-content h2 { color: #90cdf4; }
+.card-content h3 { color: #bee3f8; }
+.card-content p { color: #e2e8f0; }
+.card-content li { color: #e2e8f0; }
+.card-content li::before { color: #63b3ed; content: "▏"; }
+.card-content strong { color: #f7fafc; font-weight: 700; border-bottom: 2px solid #63b3ed; }
