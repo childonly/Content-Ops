@@ -160,6 +160,7 @@
 
 | 日期 | 任务窗口 | 修改 / 审计摘要 | 关联模块 | 关联 Task ID | 状态 / 证据 | 其他提醒 |
 |------|----------|------------------|----------|--------------|-------------|----------|
+| 2026-10-26 | 发布窗口 | 项目首次 Git 初始化 + GitHub 推送：① 完善 .gitignore（补充 playwright-browsers、uploads、transcriptions、pm2 等忽略项）；② git init -b main → 193 文件 → commit c839a9d；③ HTTPS 443 被防火墙拦截，切换 SSH 22 端口成功推送；仓库地址 github.com:childonly/Content-Ops.git | 根目录 .gitignore、.git/ | —（发布操作，非 Task ID） | push 成功；工作区 clean；branch main track origin/main | 本机已配置 SSH key，git remote 用 SSH URL；首次提交未改写历史 |
 | 2026-09-22 | 实施窗口 / COH-008 | Auto-Redbook 卡片渲染引擎集成落地：① 新建 card-render.service.ts（Playwright Chromium 渲染，8套主题+4种分页模式）；② 替换 AutoRedbookEngine 占位实现为真实渲染；③ 新增 /auto-redbook/themes 和 /auto-redbook/render 路由；④ 升级 pipeline-enhancer 为真实卡片生成；⑤ 前端图片工作室 UI 接入 Auto-Redbook 专属选项（Emoji/副标题/分页模式/多图结果） | server/card-render、server/image-studio、server/pipeline-enhancer、client/ImageStudioView | COH-008 | 后端 tsc 编译通过；server vitest 116/116 通过；前端 vue-tsc 通过 | 新增 PLAYWRIGHT_BROWSERS_PATH 环境变量；模板文件编译后复制到 dist |
 | 2026-09-21 | 治理窗口 / COH-GOV-005 | Auto-Redbook-Skills 集成可行性研究：确认现有项目已有"伪 Auto-Redbook"（仅 LLM prompt），缺真正 Playwright 卡片渲染核心；完成对比分析与四阶段集成方案建议 | 治理/研究 | COH-GOV-005 | 研究完成，待用户确认路线 | 纯研究任务，未修改产品代码 |
 | 2026-09-20 | 治理窗口 / COH-GOV-004 | 独立审计：确认 COH-005/006/007 代码真实存在；进度从 50% 校正为 75%；强化 AGENTS.md 强制阅读规则 | 治理/台账 | COH-GOV-004 | 门禁验证通过；AGENTS.md 硬性铁律已加 | 纯台账治理，未修改产品代码 |
