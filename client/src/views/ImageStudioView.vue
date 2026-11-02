@@ -528,7 +528,7 @@ onUnmounted(() => {
           </div>
           <div class="param-group" v-else>
             <label class="param-label">比例</label>
-            <el-select v-model="'3:4'" style="width: 100%" disabled>
+              <el-select :model-value="'3:4'" style="width: 100%" disabled>
               <el-option label="3:4 竖版" value="3:4" />
             </el-select>
           </div>

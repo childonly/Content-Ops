@@ -34,22 +34,7 @@ router.get('/status', async (_req: Request, res: Response) => {
     res.json({ success: true, data: status });
   } catch (e) {
     log.error(`获取登录状态失败: ${(e as Error).message}`);
-    // 超时时返回 200 + 错误标记，避免前端弹错误提示
-    res.json({
-      success: true,
-      data: {
-        is_logged_in: false,
-        cookie_age_days: 0,
-        cookie_age_hours: 0,
-        will_expire_soon: false,
-        is_expired: true,
-        last_login_time: '',
-        browser: 'Unknown',
-        consecutive_failures: 0,
-        max_cookie_age_days: 7,
-        warning_threshold_days: 5,
-      },
-    });
+    res.status(503).json({ success: false, error: (e as Error).message });
   }
 });
 

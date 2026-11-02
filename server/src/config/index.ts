@@ -1,10 +1,11 @@
 import dotenv from 'dotenv';
 import path from 'path';
 import fs from 'fs';
+import { firstExistingPath, resolvePythonPath } from '../utils/runtime-paths';
 
 // 使用 override: true 强制 .env 文件覆盖系统环境变量
 // 注意: 系统 TRAE 环境变量中已有 DB_PATH，必须覆盖
-dotenv.config({ override: true });
+if (process.env.NODE_ENV !== 'test') dotenv.config({ path: process.env.CONTENT_OPS_ENV_FILE || '.env', override: true });
 
 function resolveXhsSkillPath(): string {
   const configuredPath = process.env.XHS_SKILL_PATH?.trim() || '';
@@ -13,13 +14,19 @@ function resolveXhsSkillPath(): string {
     configuredPath,
     userProfile ? path.join(userProfile, '.agents', 'skills', 'xiaohongshu-skill') : '',
     userProfile ? path.join(userProfile, '.trae-cn', 'skills', 'xiaohongshu-skill') : '',
+    userProfile ? path.join(userProfile, '.codex', 'skills', 'xiaohongshu-skill') : '',
+    path.resolve(process.cwd(), '..', 'vendor', 'xiaohongshu-skill'),
   ].filter(Boolean);
 
-  return candidates.find((candidate) => fs.existsSync(candidate)) || configuredPath;
+  return firstExistingPath(candidates);
 }
+
+const xhsSkillPath = resolveXhsSkillPath();
 
 export const config = {
   port: parseInt(process.env.PORT || '3100', 10),
+  host: process.env.CONTENT_OPS_HOST || '127.0.0.1',
+  apiToken: process.env.CONTENT_OPS_API_TOKEN || '',
   nodeEnv: process.env.NODE_ENV || 'development',
 
   // 数据库 (使用项目本地路径，不使用系统环境变量)
@@ -52,13 +59,13 @@ export const config = {
   costThreshold: parseFloat(process.env.COST_THRESHOLD || '0.50'),
 
   // 小红书 Skill 安装路径
-  xhsSkillPath: resolveXhsSkillPath(),
+  xhsSkillPath,
 
   // xhs-auto-pipeline 路径（已合并，仅保留用于查找历史 cookie 文件）
   xhsPipelinePath: process.env.XHS_PIPELINE_PATH || '',
 
   // xhs-auto-pipeline Python 解释器路径
-  xhsPipelinePythonPath: process.env.XHS_PIPELINE_PYTHON_PATH || 'python',
+  xhsPipelinePythonPath: resolvePythonPath(process.env.XHS_PIPELINE_PYTHON_PATH, xhsSkillPath),
 
   // Python 脚本本地路径（从 xhs-auto-pipeline 迁移到本项目内部统一管理）
   // 包含: xhs-search-edge.py（Playwright 搜索回退）、custom_publish.py（长文发布）、transcribe.py（视频转录）

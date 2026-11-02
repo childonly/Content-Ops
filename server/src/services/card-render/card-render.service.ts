@@ -98,8 +98,10 @@ const THEME_DIR = path.join(__dirname, 'themes')
 
 let browser: Browser | null = null
 let browserRefCount = 0
+let idleTimer: ReturnType<typeof setTimeout> | undefined
 
 async function getBrowser(): Promise<Browser> {
+  if (idleTimer) { clearTimeout(idleTimer); idleTimer = undefined }
   if (!browser) {
     log.info('Launching Playwright Chromium browser...')
     browser = await chromium.launch({
@@ -115,7 +117,7 @@ async function releaseBrowser(): Promise<void> {
   browserRefCount--
   if (browserRefCount <= 0 && browser) {
     // 延迟关闭，避免频繁启动
-    setTimeout(async () => {
+    idleTimer = setTimeout(async () => {
       if (browser && browserRefCount <= 0) {
         log.info('Closing Playwright browser (idle timeout)')
         await browser.close()
@@ -124,6 +126,12 @@ async function releaseBrowser(): Promise<void> {
       }
     }, 30000)
   }
+}
+
+export async function closeCardBrowser(): Promise<void> {
+  if (idleTimer) clearTimeout(idleTimer)
+  if (browser) await browser.close()
+  browser = null; browserRefCount = 0; idleTimer = undefined
 }
 
 // ============================================================================
@@ -289,12 +297,12 @@ function buildCoverHtml(
   const themeCss = loadThemeCss(theme)
 
   return template
-    .replace('{{WIDTH}}', String(width))
-    .replace('{{HEIGHT}}', String(height))
-    .replace('{{THEME_CSS}}', themeCss)
-    .replace('{{EMOJI}}', emoji || '✨')
-    .replace('{{TITLE}}', escapeHtml(title))
-    .replace('{{SUBTITLE}}', escapeHtml(subtitle || ''))
+    .replaceAll('{{WIDTH}}', String(width))
+    .replaceAll('{{HEIGHT}}', String(height))
+    .replaceAll('{{THEME_CSS}}', themeCss)
+    .replace('{{EMOJI}}', () => escapeHtml(emoji || '✨'))
+    .replace('{{TITLE}}', () => escapeHtml(title))
+    .replace('{{SUBTITLE}}', () => escapeHtml(subtitle || ''))
 }
 
 /**
@@ -312,11 +320,11 @@ function buildCardHtml(
   const modeClass = `mode-${mode}`
 
   return template
-    .replace('{{WIDTH}}', String(width))
-    .replace('{{HEIGHT}}', String(height))
-    .replace('{{THEME_CSS}}', themeCss)
-    .replace('{{MODE_CLASS}}', modeClass)
-    .replace('{{CONTENT}}', contentHtml)
+    .replaceAll('{{WIDTH}}', String(width))
+    .replaceAll('{{HEIGHT}}', String(height))
+    .replaceAll('{{THEME_CSS}}', themeCss)
+    .replaceAll('{{MODE_CLASS}}', modeClass)
+    .replace('{{CONTENT}}', () => `<div class="fit-content">${contentHtml}</div>`)
 }
 
 function escapeHtml(s: string): string {
@@ -348,6 +356,16 @@ async function renderHtmlToPng(
   // 等待字体和样式加载
   await page.waitForTimeout(300)
 
+  if (mode !== 'dynamic') {
+    await page.evaluate(() => {
+      const content = document.querySelector<HTMLElement>('.card-content')
+      const fit = document.querySelector<HTMLElement>('.fit-content')
+      if (content && fit && fit.scrollHeight > content.clientHeight && content.clientHeight > 0) {
+        fit.style.zoom = String(content.clientHeight / fit.scrollHeight)
+      }
+    })
+  }
+
   if (mode === 'dynamic') {
     // 动态高度：获取内容实际高度，然后用完整页面截图
     const actualHeight = await page.evaluate(() => {
@@ -355,7 +373,8 @@ async function renderHtmlToPng(
       const card = doc.querySelector('.card-container');
       return card ? card.scrollHeight : 1440;
     })
-    const finalHeight = Math.max(height, Math.min(actualHeight + 40, 3000))
+    if (actualHeight > 3000) throw new Error('动态卡片内容超过 3000px，请改用 auto-split 自动分页')
+    const finalHeight = Math.max(height, actualHeight)
     await page.setViewportSize({ width, height: finalHeight })
     await page.waitForTimeout(100)
 
@@ -390,19 +409,22 @@ async function autoSplitRender(
   prefix: string,
 ): Promise<string[]> {
   // 先渲染完整内容，测量总高度
-  const fullHtml = buildCardHtml(bodyHtml, theme, width, height * 10, 'auto-fit')
-  await page.setViewportSize({ width, height: height * 5 })
+  const fullHtml = buildCardHtml(bodyHtml, theme, width, height, 'auto-fit')
+  await page.setViewportSize({ width, height })
   await page.setContent(fullHtml, { waitUntil: 'networkidle' })
   await page.waitForTimeout(300)
 
-  const totalHeight = await page.evaluate(() => {
-    const doc = (globalThis as any).document;
-    const content = doc.querySelector('.card-content');
-    return content ? content.scrollHeight : 1440;
+  const measured = await page.evaluate(() => {
+    const content = document.querySelector<HTMLElement>('.card-content')
+    const fit = document.querySelector<HTMLElement>('.fit-content')
+    return { natural: fit?.scrollHeight || 0, usable: content?.clientHeight || 0 }
   })
+  const totalHeight = measured.natural
+  const usableHeight = measured.usable
+  if (usableHeight <= 0) throw new Error('卡片可用高度异常，请检查模板资源')
 
   const cards: string[] = []
-  if (totalHeight <= height - 120) {
+  if (totalHeight <= usableHeight) {
     // 内容不足一屏，直接生成一张
     const cardPath = path.join(outputDir, `${prefix}card_1.png`)
     const singleHtml = buildCardHtml(bodyHtml, theme, width, height, 'auto-fit')
@@ -412,7 +434,6 @@ async function autoSplitRender(
   }
 
   // 计算需要的页数
-  const usableHeight = height - 120 // 上下内边距
   const pageCount = Math.ceil(totalHeight / usableHeight)
 
   for (let i = 0; i < pageCount; i++) {
@@ -446,11 +467,11 @@ function buildPaginatedCardHtml(
   `
 
   return template
-    .replace('{{WIDTH}}', String(width))
-    .replace('{{HEIGHT}}', String(height))
-    .replace('{{THEME_CSS}}', themeCss)
-    .replace('{{MODE_CLASS}}', 'mode-auto-split')
-    .replace('{{CONTENT}}', paginatedContent)
+    .replaceAll('{{WIDTH}}', String(width))
+    .replaceAll('{{HEIGHT}}', String(height))
+    .replaceAll('{{THEME_CSS}}', themeCss)
+    .replaceAll('{{MODE_CLASS}}', 'mode-auto-split')
+    .replace('{{CONTENT}}', () => paginatedContent)
 }
 
 // ============================================================================
@@ -473,6 +494,11 @@ export async function renderCards(
   const width = options.width || DEFAULT_WIDTH
   const height = options.height || DEFAULT_HEIGHT
   const prefix = options.prefix || ''
+  if (typeof markdown !== 'string' || !markdown.trim() || markdown.length > 120_000) throw new Error('卡片正文不能为空且不能超过 120000 字符')
+  if (!getAvailableThemes().some(item => item.name === theme)) throw new Error('无效的卡片主题')
+  if (!['separator', 'auto-fit', 'auto-split', 'dynamic'].includes(mode)) throw new Error('无效的分页模式')
+  if (![width, height].every(value => Number.isInteger(value) && value >= 200 && value <= 4096)) throw new Error('卡片尺寸必须是 200–4096 的整数')
+  if (!/^[a-zA-Z0-9_-]*$/.test(prefix)) throw new Error('文件名前缀只能包含字母、数字、下划线和连字符')
 
   // 输出目录
   const outputDir = options.outputDir || fs.mkdtempSync(path.join(os.tmpdir(), 'card-render-'))

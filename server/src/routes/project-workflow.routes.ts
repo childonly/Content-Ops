@@ -1,4 +1,5 @@
 import { Router, type Request, type Response } from 'express';
+import { getNodeJob, latestNodeJob, startNodeJob } from '../services/project-node-jobs.service';
 import {
   confirmProjectNode, createProjectWorkflow, deleteProjectWorkflow, executeContinuously,
   executeProjectNode, generateProjectVideoCandidates, getProjectNodeWorkbench, getProjectWorkflow, listProjectWorkflows,
@@ -6,6 +7,22 @@ import {
 } from '../services/project-workflow.service';
 
 export const router = Router();
+
+router.get('/jobs/:jobId', (req, res) => {
+  const data = getNodeJob(req.params.jobId);
+  res.status(data ? 200 : 404).json(data ? { success: true, data } : { success: false, error: '任务不存在' });
+});
+router.get('/:id/nodes/:nodeId/jobs/latest', (req, res) => {
+  res.json({ success: true, data: latestNodeJob(Number(req.params.id), req.params.nodeId) });
+});
+router.post('/:id/nodes/:nodeId/jobs', (req, res) => {
+  try {
+    const { kind, params } = req.body || {};
+    if (kind !== 'execute' && kind !== 'video') return res.status(400).json({ success: false, error: '任务类型无效' });
+    if (params !== undefined && (!params || typeof params !== 'object' || Array.isArray(params))) return res.status(400).json({ success: false, error: '任务参数必须为对象' });
+    return res.status(202).json({ success: true, data: startNodeJob(Number(req.params.id), req.params.nodeId, kind, params || {}) });
+  } catch (error) { return res.status(400).json({ success: false, error: (error as Error).message }); }
+});
 
 router.get('/', (_req, res) => res.json({ success: true, data: listProjectWorkflows() }));
 
@@ -24,8 +41,10 @@ router.get('/:id', (req, res) => {
 });
 
 router.delete('/:id', (req, res) => {
-  const deleted = deleteProjectWorkflow(Number(req.params.id));
-  res.status(deleted ? 200 : 404).json(deleted ? { success: true, data: { deleted: true } } : { success: false, error: '项目工作流不存在' });
+  try {
+    const deleted = deleteProjectWorkflow(Number(req.params.id));
+    res.status(deleted ? 200 : 404).json(deleted ? { success: true, data: { deleted: true } } : { success: false, error: '项目工作流不存在' });
+  } catch (error) { res.status(409).json({ success: false, error: (error as Error).message }); }
 });
 
 router.post('/:id/nodes/:nodeId/execute', async (req, res) => {

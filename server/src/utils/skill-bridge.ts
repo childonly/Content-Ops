@@ -29,6 +29,7 @@ import { createServiceLogger } from './logger';
 import { PYTHON_MAX_BUFFER } from './constants';
 import path from 'path';
 import fs from 'fs';
+import { fetchObservedAnalytics } from '../services/analytics-source.service';
 
 const log = createServiceLogger('skill-bridge');
 
@@ -686,42 +687,13 @@ class TraeSkillBridge implements SkillBridge {
     return { publication };
   }
 
-  /**
-   * 效果追踪 - 生成分析数据
-   *
-   * ⚠️ 注意：当前使用模拟数据（Math.random），非真实追踪数据。
-   * TikHub 的小红书 API 需要具体 user_id 才能查询真实数据。
-   * 后续可对接真实 API（如 /xiaohongshu/web_v3/user_info 或创作者中心数据）。
-   *
-   * 返回的 AnalyticsRecord 中 isMockData=true 标识此为模拟数据。
-   */
+  /** 真实模式只读取实际笔记指标；失败向上传递，不生成随机替代值。 */
   private async trackAnalytics(params: SkillParams): Promise<AnalyticsTrackResult> {
-    const publicationId = (params as any).publicationId || 1;
-    const contentId = (params as any).contentId || 1;
-
-    const views = Math.floor(Math.random() * 50000) + 1000;
-    const likes = Math.floor(views * (0.05 + Math.random() * 0.1));
-    const comments = Math.floor(likes * 0.1);
-    const shares = Math.floor(likes * 0.05);
-    const collects = Math.floor(likes * 0.3);
-    const engagementRate = parseFloat(((likes + comments + shares + collects) / views * 100).toFixed(2));
-
-    const analytics: AnalyticsRecord = {
-      id: Date.now(),
-      publicationId,
-      contentId,
-      views,
-      likes,
-      comments,
-      shares,
-      collects,
-      engagementRate,
-      trackedAt: new Date().toISOString(),
-      isMockData: true,  // ⚠️ 标识为模拟数据
-    };
-
-    log.warn(`[TRAE] ⚠️ 返回模拟追踪数据（非真实）: ${views} 浏览, ${likes} 点赞`);
-    return { analytics };
+    return { analytics: await fetchObservedAnalytics({
+      publicationId: Number(params.publicationId), contentId: Number(params.contentId),
+      publicationUrl: typeof params.publicationUrl === 'string' ? params.publicationUrl : undefined,
+      platform: typeof params.platform === 'string' ? params.platform : undefined,
+    }) };
   }
 }
 

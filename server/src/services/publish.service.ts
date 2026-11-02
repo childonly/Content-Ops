@@ -85,6 +85,16 @@ export function getPublications(
   return { data: rows.map(mapRow), total };
 }
 
+/** Prepare a durable review handoff; this function never calls an external publisher. */
+export function preparePublication(contentId: number): Publication {
+  const db = getDb();
+  if (!db.prepare('SELECT id FROM contents WHERE id = ?').get(contentId)) throw new PublishServiceValidationError('待发布内容不存在');
+  const existing = db.prepare("SELECT * FROM publications WHERE content_id=? AND status IN ('pending','publishing','published') ORDER BY id DESC LIMIT 1").get(contentId) as PublicationRow | undefined;
+  if (existing) return mapRow(existing);
+  const result = db.prepare("INSERT INTO publications(content_id,platform,engine,status) VALUES (?,'xiaohongshu',?,'pending')").run(contentId, getDefaultPublishEngineName());
+  return mapRow(db.prepare('SELECT * FROM publications WHERE id=?').get(result.lastInsertRowid) as PublicationRow);
+}
+
 export async function publishContent(params: PublishParams): Promise<Publication> {
   const db = getDb();
   const platform = params.platform || 'xiaohongshu';
@@ -100,16 +110,19 @@ export async function publishContent(params: PublishParams): Promise<Publication
   }
 
   const engineName = params.engine?.trim() || getDefaultPublishEngineName();
-  const info = db.prepare(`
-    INSERT INTO publications (content_id, platform, engine, status, scheduled_at)
-    VALUES (@content_id, @platform, @engine, 'publishing', @scheduled_at)
-  `).run({
-    content_id: params.contentId,
-    platform,
-    engine: engineName,
-    scheduled_at: params.scheduledAt ?? null,
-  });
-  const publicationId = Number(info.lastInsertRowid);
+  const claim = db.transaction((): { id: number; published?: PublicationRow } => {
+    const previous = db.prepare("SELECT * FROM publications WHERE content_id=? AND platform=? AND status IN ('pending','publishing','published','failed') ORDER BY CASE status WHEN 'published' THEN 0 WHEN 'publishing' THEN 1 WHEN 'pending' THEN 2 ELSE 3 END, id DESC LIMIT 1").get(params.contentId, platform) as PublicationRow | undefined;
+    if (previous?.status === 'published') return { id: previous.id, published: previous };
+    if (previous?.status === 'publishing') throw new PublishServiceValidationError('内容发布中，请勿重复提交');
+    if (previous) {
+      db.prepare("UPDATE publications SET status='publishing',engine=?,error_message=NULL WHERE id=?").run(engineName, previous.id);
+      return { id: previous.id };
+    }
+    const info = db.prepare("INSERT INTO publications(content_id,platform,engine,status,scheduled_at) VALUES (?,?,?,'publishing',?)").run(params.contentId, platform, engineName, params.scheduledAt ?? null);
+    return { id: Number(info.lastInsertRowid) };
+  })();
+  if (claim.published) return mapRow(claim.published);
+  const publicationId = claim.id;
 
   try {
     const result = await publishWithEngine({

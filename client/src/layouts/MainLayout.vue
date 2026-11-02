@@ -306,7 +306,7 @@ function handleToggleTheme(): void {
             </template>
             <div class="service-status-detail">
               <div class="detail-header">
-                服务状态（在线 {{ onlineCount }}/{{ totalCount }}）
+                本项目必需服务（在线 {{ onlineCount }}/{{ totalCount }}）
               </div>
               <div
                 v-for="svc in serviceStatus.services"

@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
 import { ElMessage } from 'element-plus'
+import { useProjectNodeJob } from '@/composables/useProjectNodeJob'
 import { projectWorkflowApi, videoStudioApi, type ProjectNodeWorkbenchDTO, type ProjectPromptRecommendationDTO, type ProjectWorkflowDTO, type ProjectWorkflowNodeDTO, type ProjectWorkbenchInputDTO, type UnifiedVideoRecord } from '@/api'
 
 const props = defineProps<{ workflow: ProjectWorkflowDTO; node: ProjectWorkflowNodeDTO }>()
@@ -19,12 +20,16 @@ const videoModel = ref('medium')
 const videoLanguage = ref('auto')
 const videoPlatform = ref(String(props.workflow.initialInput.platform || 'xiaohongshu'))
 const completedVideoRecords = ref<UnifiedVideoRecord[]>([])
+const { job, running: jobRunning, elapsed, pollError, start: startJob, restore: restoreJob } = useProjectNodeJob(props.workflow.id, props.node.nodeId, async workflow => {
+  emit('updated', workflow)
+  await loadWorkbench()
+})
 
 const output = computed(() => (props.node.output || {}) as Record<string, unknown>)
 const candidates = computed(() => Array.isArray(output.value.candidates) ? output.value.candidates as Array<Record<string, unknown>> : [])
 const selectedOutput = computed(() => output.value.selected as Record<string, unknown> | undefined)
 const selectedInput = computed<ProjectWorkbenchInputDTO | undefined>(() => workbench.value?.inputs.find(input => input.id === selectedInputId.value))
-const canExecute = computed(() => !loading.value && (!workbench.value?.capabilities.inputRequired || !!selectedInputId.value))
+const canExecute = computed(() => !loading.value && !jobRunning.value && !workbench.value?.capabilities.blockedReason && (!workbench.value?.capabilities.inputRequired || !!selectedInputId.value))
 
 function extractVideoUrl(input: string): string {
   return input.trim().match(/https?:\/\/[^\s\u3000（）()【】《》“”‘’]+/i)?.[0] || input.trim()
@@ -69,25 +74,20 @@ async function executeGeneric(): Promise<void> {
   if (!canExecute.value) return
   loading.value = true
   try {
-    const res = await projectWorkflowApi.executeNode(props.workflow.id, props.node.nodeId, { prompt: prompt.value.trim() || undefined, selectedInput: selectedInput.value })
-    if (!res.data) throw new Error(res.error || '节点执行失败')
-    emit('updated', res.data)
-    await loadWorkbench()
-    ElMessage.success('节点执行完成，请选择或确认成果')
+    await startJob('execute', { prompt: prompt.value.trim() || undefined, selectedInput: selectedInput.value })
+    ElMessage.success('任务已启动，可关闭工作台后继续查看')
   } catch (error) { ElMessage.error('节点执行失败：' + (error as Error).message) } finally { loading.value = false }
 }
 
 async function executeVideo(): Promise<void> {
+  if (jobRunning.value) return
   if (!videoUrl.value.trim()) { ElMessage.warning('请先输入视频链接'); return }
   const normalizedUrl = extractVideoUrl(videoUrl.value)
   if (!/^https?:\/\//i.test(normalizedUrl)) { ElMessage.warning('未识别到有效的视频 URL，请检查输入'); return }
   loading.value = true
   try {
-    const res = await projectWorkflowApi.generateVideo(props.workflow.id, props.node.nodeId, { url: normalizedUrl, sourceText: extractVideoSourceText(videoUrl.value) || undefined, strategy: videoStrategy.value, model: videoModel.value, language: videoLanguage.value, platform: videoPlatform.value })
-    if (!res.data) throw new Error(res.error || '视频处理失败')
-    emit('updated', res.data)
-    await loadWorkbench()
-    ElMessage.success('视频处理完成，请选择一条成果')
+    await startJob('video', { url: normalizedUrl, sourceText: extractVideoSourceText(videoUrl.value) || undefined, strategy: videoStrategy.value, model: videoModel.value, language: videoLanguage.value, platform: videoPlatform.value })
+    ElMessage.success('视频任务已启动，可关闭工作台后继续查看')
   } catch (error) { ElMessage.error('视频处理失败：' + (error as Error).message) } finally { loading.value = false }
 }
 
@@ -135,7 +135,7 @@ async function confirmExisting(): Promise<void> {
 function useRecommendation(item: ProjectPromptRecommendationDTO): void { prompt.value = item.prompt; ElMessage.success('已填入提示词，可继续人工微调') }
 function summary(value: unknown): string { return String(value || '暂无摘要') }
 
-onMounted(async () => { try { await loadWorkbench(); if (props.node.moduleId === 'video-studio') await loadCompletedVideoRecords(); else await loadRecommendations() } catch (error) { ElMessage.error((error as Error).message) } })
+onMounted(async () => { try { await loadWorkbench(); await restoreJob(); if (props.node.moduleId === 'video-studio') await loadCompletedVideoRecords() } catch (error) { ElMessage.error((error as Error).message) } })
 </script>
 
 <template>
@@ -144,6 +144,9 @@ onMounted(async () => { try { await loadWorkbench(); if (props.node.moduleId ===
       <div class="workbench-title"><div><small>PROJECT NODE WORKBENCH</small><h2>{{ node.label }}</h2></div><el-tag :type="node.status === 'completed' ? 'success' : node.status === 'failed' ? 'danger' : 'info'">{{ node.status }}</el-tag></div>
     </template>
     <div v-if="workbench" class="workbench-body">
+      <el-alert v-if="jobRunning" :title="job?.message || '任务执行中'" :description="`已执行 ${elapsed} 秒；关闭或刷新页面不会取消任务。`" type="info" :closable="false" show-icon />
+      <el-alert v-if="pollError || job?.error" :title="pollError || job?.error || ''" type="error" :closable="false" show-icon />
+      <a v-if="node.moduleId === 'publish'" href="/content?tab=publish" target="_blank" rel="noopener noreferrer">前往发布列表执行发布，再返回确认结果</a>
       <el-alert v-if="workbench.capabilities.blockedReason" :title="workbench.capabilities.blockedReason" type="warning" show-icon :closable="false" />
       <section v-if="workbench.capabilities.inputRequired" class="workbench-section">
         <div class="section-heading"><strong>1. 选择上游成果</strong><span>选择后才可进入本节点</span></div>
@@ -158,22 +161,22 @@ onMounted(async () => { try { await loadWorkbench(); if (props.node.moduleId ===
       <section v-if="node.moduleId === 'video-studio'" class="workbench-section">
         <div class="section-heading"><strong>2. 视频工作室</strong><span>复用真实视频处理能力</span></div>
         <el-input v-model="videoUrl" placeholder="粘贴视频链接或平台分享文本" clearable />
-        <div class="video-options"><el-select v-model="videoStrategy"><el-option label="视频转录" value="transcribe" /><el-option label="视频炼金术" value="alchemist" /></el-select><el-select v-if="videoStrategy === 'transcribe'" v-model="videoModel"><el-option label="medium（推荐）" value="medium" /><el-option label="small（较快）" value="small" /><el-option label="large-v3（最高精度）" value="large-v3" /></el-select><el-select v-if="videoStrategy === 'transcribe'" v-model="videoLanguage"><el-option label="自动检测" value="auto" /><el-option label="中文" value="zh" /><el-option label="英文" value="en" /></el-select><el-select v-if="videoStrategy === 'alchemist'" v-model="videoPlatform"><el-option label="小红书" value="xiaohongshu" /><el-option label="抖音" value="douyin" /><el-option label="微信公众号" value="wechat" /></el-select><el-button type="primary" :loading="loading" @click="executeVideo">生成候选成果</el-button></div>
-        <div v-if="completedVideoRecords.length" class="history-block"><div class="section-heading"><strong>复用已有成功成果</strong><span>无需重复转录</span></div><div class="history-list"><button v-for="record in completedVideoRecords" :key="record.uid" class="history-item" :disabled="loading" @click="reuseVideo(record)"><div><strong>{{ record.sourceText || record.rewrittenTitle || record.url }}</strong><small>{{ record.strategy }} · {{ record.model || record.platform || '默认配置' }}</small></div><span>载入</span></button></div></div>
+        <div class="video-options"><el-select v-model="videoStrategy"><el-option label="视频转录" value="transcribe" /><el-option label="视频炼金术" value="alchemist" /></el-select><el-select v-if="videoStrategy === 'transcribe'" v-model="videoModel"><el-option label="medium（推荐）" value="medium" /><el-option label="small（较快）" value="small" /><el-option label="large-v3（最高精度）" value="large-v3" /></el-select><el-select v-if="videoStrategy === 'transcribe'" v-model="videoLanguage"><el-option label="自动检测" value="auto" /><el-option label="中文" value="zh" /><el-option label="英文" value="en" /></el-select><el-select v-if="videoStrategy === 'alchemist'" v-model="videoPlatform"><el-option label="小红书" value="xiaohongshu" /><el-option label="抖音" value="douyin" /><el-option label="微信公众号" value="wechat" /></el-select><el-button type="primary" :loading="loading || jobRunning" @click="executeVideo">生成候选成果</el-button></div>
+        <div v-if="completedVideoRecords.length" class="history-block"><div class="section-heading"><strong>复用已有成功成果</strong><span>无需重复转录</span></div><div class="history-list"><button v-for="record in completedVideoRecords" :key="record.uid" class="history-item" :disabled="loading || jobRunning" @click="reuseVideo(record)"><div><strong>{{ record.sourceText || record.rewrittenTitle || record.url }}</strong><small>{{ record.strategy }} · {{ record.model || record.platform || '默认配置' }}</small></div><span>载入</span></button></div></div>
       </section>
 
       <section v-if="node.moduleId !== 'video-studio' && workbench.capabilities.supportsPromptRecommendations" class="workbench-section">
         <div class="section-heading"><strong>{{ workbench.capabilities.inputRequired ? '2' : '1' }}. LLM 提示词推荐</strong><el-button text type="primary" :loading="recommending" @click="loadRecommendations">重新推荐</el-button></div>
         <div class="prompt-grid"><button v-for="item in recommendations" :key="item.id" class="prompt-card" @click="useRecommendation(item)"><strong>{{ item.title }}</strong><p>{{ item.reason }}</p><code>{{ item.prompt }}</code><small v-if="item.fallback">本地备用模板</small></button></div>
         <el-input v-model="prompt" type="textarea" :rows="5" placeholder="点击模板后，在这里继续人工微调" />
-        <el-button class="execute-button" type="primary" :loading="loading" :disabled="!canExecute || !!workbench.capabilities.blockedReason" @click="executeGeneric">执行本节点</el-button>
+        <el-button class="execute-button" type="primary" :loading="loading || jobRunning" :disabled="!canExecute || !!workbench.capabilities.blockedReason" @click="executeGeneric">执行本节点</el-button>
       </section>
 
       <section v-if="candidates.length" class="workbench-section">
         <div class="section-heading"><strong>{{ node.moduleId === 'video-studio' ? '3' : '3' }}. 选择成果并进入下一步</strong><span>点击一条成果确认</span></div>
-        <div class="candidate-grid"><button v-for="candidate in candidates" :key="String(candidate.id)" class="candidate-card" :class="{ selected: selectedCandidateId === String(candidate.id) }" :disabled="loading" @click="selectCandidate(candidate)"><span>{{ candidate.type }}</span><strong>{{ candidate.title }}</strong><p>{{ summary(candidate.summary) }}</p><small>选择并确认 →</small></button></div>
+        <div class="candidate-grid"><button v-for="candidate in candidates" :key="String(candidate.id)" class="candidate-card" :class="{ selected: selectedCandidateId === String(candidate.id) }" :disabled="loading || jobRunning" @click="selectCandidate(candidate)"><span>{{ candidate.type }}</span><strong>{{ candidate.title }}</strong><p>{{ summary(candidate.summary) }}</p><small>选择并确认 →</small></button></div>
       </section>
-      <section v-else-if="node.status === 'waiting_review'" class="workbench-section"><el-alert title="当前节点等待人工确认" description="请检查右侧结果后点击确认，系统会点亮下一节点。" type="info" show-icon :closable="false" /><el-button class="execute-button" type="success" :loading="loading" @click="confirmExisting">确认并进入下一步</el-button></section>
+      <section v-else-if="node.status === 'waiting_review'" class="workbench-section"><el-alert title="当前节点等待人工确认" description="请检查右侧结果后点击确认，系统会点亮下一节点。" type="info" show-icon :closable="false" /><el-button class="execute-button" type="success" :loading="loading || jobRunning" @click="confirmExisting">确认并进入下一步</el-button></section>
       <section v-if="selectedOutput" class="selected-preview"><span>当前选定成果</span><strong>{{ selectedOutput.title }}</strong><p>{{ summary(selectedOutput.summary || selectedOutput.value) }}</p></section>
     </div>
     <el-skeleton v-else :rows="8" animated />

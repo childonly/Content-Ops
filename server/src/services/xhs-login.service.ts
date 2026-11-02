@@ -22,6 +22,7 @@ import { promisify } from 'util';
 import path from 'path';
 import fs from 'fs';
 import os from 'os';
+import { getRuntimeDiagnostics } from './runtime-diagnostics.service';
 import { PYTHON_MAX_BUFFER } from '../utils/constants';
 
 const execFileAsync = promisify(execFile);
@@ -216,8 +217,7 @@ export function detectBrowser(): string {
  */
 async function checkLoginViaSkill(): Promise<boolean> {
   if (!config.xhsSkillPath) {
-    log.error('XHS_SKILL_PATH 未配置,无法检查登录状态');
-    return false;
+    throw new Error('xiaohongshu-skill 未安装或路径失效；请查看 /api/runtime/diagnostics 和 README');
   }
 
   log.info('检查 xiaohongshu-skill 登录状态');
@@ -252,7 +252,7 @@ async function checkLoginViaSkill(): Promise<boolean> {
     }
   } catch (e) {
     log.error(`登录检查失败: ${(e as Error).message}`);
-    return false;
+    throw new Error(`登录检查命令失败: ${(e as Error).message}`);
   }
 }
 
@@ -260,6 +260,8 @@ async function checkLoginViaSkill(): Promise<boolean> {
  * 获取完整的登录状态(含 Cookie 年龄、过期预警等)。
  */
 export async function getLoginStatus(): Promise<LoginStatus> {
+  const runtime = getRuntimeDiagnostics();
+  if (!runtime.readyForLogin) throw new Error(runtime.xhsSkill.reason || runtime.python.reason || '登录运行环境未就绪');
   // 检查实际登录状态
   const isLoggedIn = await checkLoginViaSkill();
 

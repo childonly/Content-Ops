@@ -167,6 +167,12 @@ export interface AnalyticsRecord {
   collects: number
   engagementRate: number
   trackedAt: string
+  sourceType?: 'observed' | 'estimated' | 'simulated' | 'unknown'
+  isMockData?: boolean
+  provider?: string
+  sourceUrl?: string
+  sourceId?: string
+  availableMetrics?: Array<'views' | 'likes' | 'comments' | 'shares' | 'collects' | 'engagementRate'>
 }
 
 // ============================================================

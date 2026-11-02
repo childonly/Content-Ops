@@ -453,7 +453,7 @@ ${transcript}
       const points = text
         .split('\n')
         .map((line) => line.trim())
-        .map((line) => line.replace(/^[\d\.\-\*•\s]+/, '').trim()) // 去除前缀编号/符号
+        .map((line) => line.replace(/^[\d.\-*•\s]+/, '').trim()) // 去除前缀编号/符号
         .filter((line) => line.length > 0);
 
       if (points.length > 0) {

@@ -14,16 +14,24 @@
     "build": "npm run build --workspace server && npm run build --workspace client",
     "build:server": "npm run build --workspace server",
     "build:client": "npm run build --workspace client",
-    "lint": "echo 'Add linter config'",
+    "lint": "eslint server/src client/src scripts --quiet",
     "db:init": "npm run db:init --workspace server",
     "install:all": "npm install",
     "ledger:check": "node scripts/check-ledger.js",
-    "ledger:validate": "node scripts/check-ledger.js --test && node scripts/check-ledger.js"
+    "ledger:validate": "node scripts/check-ledger.js --test && node scripts/check-ledger.js",
+    "test": "npm run test --workspace server && npm run test --workspace client",
+    "check": "npm run ledger:validate && npm run lint && npm test && npm run build && npm run test:api",
+    "test:cards": "node scripts/check-card-matrix.cjs",
+    "test:api": "node scripts/api-smoke.cjs"
   },
   "devDependencies": {
-    "concurrently": "^8.2.2"
+    "@eslint/js": "9.39.5",
+    "concurrently": "^8.2.2",
+    "eslint": "9.39.5",
+    "eslint-plugin-vue": "10.12.0",
+    "typescript-eslint": "8.72.1"
   },
   "engines": {
-    "node": ">=18.0.0 <24.0.0"
+    "node": ">=22.13.0 <24.0.0"
   }
 }

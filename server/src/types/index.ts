@@ -219,6 +219,9 @@ export interface PublishResult {
 // 分析 (Analytics) 相关
 // ============================================================================
 
+export type DataSourceType = 'observed' | 'estimated' | 'simulated' | 'unknown';
+export type AnalyticsMetric = 'views' | 'likes' | 'comments' | 'shares' | 'collects' | 'engagementRate';
+
 export interface AnalyticsRecord {
   id: number;
   publicationId: number;
@@ -233,6 +236,11 @@ export interface AnalyticsRecord {
   // 可选字段: 用于标识模拟数据和错误信息
   errorMessage?: string;
   isMockData?: boolean;
+  sourceType?: DataSourceType;
+  provider?: string;
+  sourceUrl?: string;
+  sourceId?: string;
+  availableMetrics?: AnalyticsMetric[];
 }
 
 export interface AnalyticsTrackParams {

@@ -1308,6 +1308,7 @@ function splitLongCJKSegment(text: string): string {
   }
 
   // 将占位符替换为 "。连接词"（如果前面不是标点）
+  // eslint-disable-next-line no-control-regex -- NUL is the deliberate temporary delimiter above.
   result = result.replace(/\x00([^\x00]+)\x00/g, (match, conj) => {
     return conj; // 先恢复
   });

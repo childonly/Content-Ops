@@ -5,7 +5,7 @@
   "scripts": {
     "dev": "powershell -NoProfile -ExecutionPolicy Bypass -File ../scripts/start-compatible-server.ps1 -Mode dev",
     "serve": "powershell -NoProfile -ExecutionPolicy Bypass -File ../scripts/start-compatible-server.ps1 -Mode serve",
-    "build": "tsc",
+    "build": "tsc && node ../scripts/copy-server-assets.cjs",
     "start": "powershell -NoProfile -ExecutionPolicy Bypass -File ../scripts/start-compatible-server.ps1 -Mode start",
     "db:init": "ts-node --transpile-only src/db/init.ts",
     "db:migrate-from-pipeline": "ts-node --transpile-only scripts/migrate-from-pipeline-db.ts",

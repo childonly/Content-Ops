@@ -3,6 +3,10 @@ import { getFlow } from './business-flow.service';
 import { discoverTrends } from './trend.service';
 import { researchHashtags } from './hashtag.service';
 import { generateContent } from './content.service';
+import { generateImage, renderAutoRedbookCards } from './image-studio.service';
+import { trackAnalytics } from './analytics.service';
+import { preparePublication } from './publish.service';
+import { config as appConfig } from '../config';
 import { getUnifiedRecord, processVideoUnified, type UnifiedVideoRecord } from './video-studio.service';
 import { callLLM } from './llm-service';
 import { createServiceLogger } from '../utils/logger';
@@ -46,7 +50,7 @@ function textSummary(value: unknown, max = 180): string {
 
 function moduleCapabilities(workflow: ProjectWorkflow, node: ProjectWorkflowNode) {
   const supportsVideoGeneration = node.moduleId === 'video-studio';
-  const supported = ['radar', 'trends', 'hashtags', 'content', 'video-studio', 'draft-review', 'publish'];
+  const supported = ['radar', 'trends', 'hashtags', 'content', 'image-studio', 'analytics', 'video-studio', 'draft-review', 'publish'];
   return {
     moduleId: node.moduleId,
     label: node.label,
@@ -109,7 +113,8 @@ function sortedNodes(nodes: FlowNodeData[], edges: FlowEdgeData[]): FlowNodeData
       if (indegree.get(target) === 0) queue.push(target);
     }
   }
-  return result.length === nodes.length ? result : nodes;
+  if (result.length !== nodes.length) throw new Error('业务编排包含循环依赖，无法创建项目工作流');
+  return result;
 }
 
 export function listProjectWorkflows(): ProjectWorkflow[] {
@@ -148,6 +153,8 @@ export function createProjectWorkflow(input: { flowId: number; name: string; des
 }
 
 export function deleteProjectWorkflow(id: number): boolean {
+  const active = getDb().prepare("SELECT id FROM project_node_jobs WHERE workflow_id=? AND status='running' LIMIT 1").get(id);
+  if (active) throw new Error('项目有执行中的任务，请等待完成后删除');
   return getDb().prepare('DELETE FROM project_workflows WHERE id = ?').run(id).changes > 0;
 }
 
@@ -162,6 +169,7 @@ function predecessors(workflow: ProjectWorkflow, nodeId: string): string[] {
 
 function candidateList(node: ProjectWorkflowNode): Array<Record<string, unknown>> {
   const output = node.output as Record<string, unknown> | undefined;
+  if (node.status === 'completed' && output?.selected && typeof output.selected === 'object') return [output.selected as Record<string, unknown>];
   if (Array.isArray(output?.candidates)) return output.candidates.filter((item): item is Record<string, unknown> => {
     if (!item || typeof item !== 'object') return false;
     const value = item as Record<string, unknown>;
@@ -244,6 +252,7 @@ export function getProjectNodeWorkbench(workflowId: number, nodeId: string): Pro
 
 export function selectProjectNodeInput(workflowId: number, nodeId: string, input: { id: string; value?: unknown }): ProjectWorkflow {
   const workbench = getProjectNodeWorkbench(workflowId, nodeId);
+  if (workbench.node.status === 'running') throw new Error('节点执行中，不能修改输入');
   const selected = workbench.inputs.find(item => item.id === input.id);
   if (!selected) throw new Error('所选成果不存在或尚未完成');
   const db = getDb();
@@ -296,6 +305,10 @@ export async function generateProjectVideoCandidates(workflowId: number, nodeId:
   const node = workflow?.nodes?.find(item => item.nodeId === nodeId);
   if (!workflow || !node) throw new Error('项目节点不存在');
   if (node.moduleId !== 'video-studio') throw new Error('当前节点不是视频工作室');
+  if (node.status === 'running') throw new Error('节点执行中，请等待当前任务完成');
+  if (node.status === 'completed') return workflow;
+  const unready = predecessors(workflow, nodeId).filter(id => workflow.nodes?.find(item => item.nodeId === id)?.status !== 'completed');
+  if (unready.length) throw new Error(`前置节点尚未完成: ${unready.join(', ')}`);
   if (!input.url?.trim()) throw new Error('视频链接不能为空');
   const normalizedUrl = extractVideoUrl(input.url);
   if (!/^https?:\/\//i.test(normalizedUrl)) throw new Error('未识别到有效的视频 URL，请粘贴平台分享链接或完整 URL');
@@ -303,7 +316,7 @@ export async function generateProjectVideoCandidates(workflowId: number, nodeId:
   const startedAt = new Date().toISOString();
   const db = getDb();
   db.prepare(`UPDATE project_workflow_nodes SET status='running', input_snapshot=?, error=NULL, attempt=attempt+1, started_at=?, updated_at=datetime('now') WHERE workflow_id=? AND node_id=?`)
-    .run(stringify({ initial: workflow.initialInput, videoRequest: { ...input, url: normalizedUrl, sourceText }, upstreamNodeIds: predecessors(workflow, nodeId) }), startedAt, workflowId, nodeId);
+    .run(stringify({ ...((node.input && typeof node.input === 'object') ? node.input : {}), initial: workflow.initialInput, videoRequest: { ...input, url: normalizedUrl, sourceText }, upstreamNodeIds: predecessors(workflow, nodeId) }), startedAt, workflowId, nodeId);
   db.prepare("UPDATE project_workflows SET status='running', current_node_id=?, updated_at=datetime('now') WHERE id=?").run(nodeId, workflowId);
   try {
     const record = await processVideoUnified(normalizedUrl, { strategy: input.strategy || 'transcribe', transcribeOptions: { model: input.model || 'medium', language: input.language && input.language !== 'auto' ? input.language : undefined, sourceText }, alchemistPlatform: input.platform as any || 'xiaohongshu' });
@@ -352,11 +365,24 @@ export function selectProjectNodeResult(workflowId: number, nodeId: string, cand
   const workflow = getProjectWorkflow(workflowId);
   const node = workflow?.nodes?.find(item => item.nodeId === nodeId);
   if (!workflow || !node) throw new Error('项目节点不存在');
+  if (node.status === 'running') throw new Error('节点执行中，不能确认旧成果');
+  if (!['waiting_review', 'completed'].includes(node.status)) throw new Error('当前节点没有待确认成果');
   const output = node.output as Record<string, unknown> | undefined;
   const candidates = Array.isArray(output?.candidates) ? output.candidates as Array<Record<string, unknown>> : [];
   const selected = candidates.find(item => String(item.id) === candidateId);
   if (!selected) throw new Error('成果不存在，请重新生成候选成果');
+  if (node.status === 'completed') return workflow;
   const db = getDb();
+  if (node.moduleId === 'image-studio') {
+    const image = selected.value as Record<string, unknown>;
+    const contentId = Number(image?.contentId || workflow.finalContentId);
+    if (contentId && typeof image?.url === 'string') {
+      const row = db.prepare('SELECT images FROM contents WHERE id=?').get(contentId) as { images: string | null } | undefined;
+      if (!row) throw new Error('配图关联内容不存在');
+      const previous = parseJson<string[]>(row.images, []);
+      db.prepare('UPDATE contents SET images=? WHERE id=?').run(stringify([...new Set([...previous, image.url])]), contentId);
+    }
+  }
   db.prepare(`UPDATE project_workflow_nodes SET status='completed', output_snapshot=?, updated_at=datetime('now') WHERE workflow_id=? AND node_id=?`).run(stringify({ candidates, selected }), workflowId, nodeId);
   const after = getProjectWorkflow(workflowId)!;
   const next = nextPendingNode(after);
@@ -384,7 +410,7 @@ function deriveKeyword(workflow: ProjectWorkflow, upstream: ProjectWorkflowNode[
 }
 
 async function runAdapter(workflow: ProjectWorkflow, node: ProjectWorkflowNode, prompt?: string, selectedInput?: ProjectWorkbenchInput): Promise<{
-  status: ProjectNodeStatus; output: unknown; outputType: string; artifacts?: unknown[]; sources?: unknown[]; finalContentId?: number;
+  status: ProjectNodeStatus; output: unknown; outputType: string; artifacts?: unknown[]; sources?: unknown[]; finalContentId?: number; provider?: string; model?: string;
 }> {
   const upstreamIds = predecessors(workflow, node.nodeId);
   const upstream = (workflow.nodes || []).filter(item => upstreamIds.includes(item.nodeId));
@@ -396,9 +422,9 @@ async function runAdapter(workflow: ProjectWorkflow, node: ProjectWorkflowNode, 
     case 'trends': {
       const items = await discoverTrends({ platform, limit: 10 });
       return {
-        status: 'completed', outputType: 'trend-list', output: { items, sourceType: 'observed' satisfies SourceType },
+        status: 'completed', outputType: 'trend-list', output: { items, sourceType: (appConfig.skillBridgeMode === 'mock' ? 'simulated' : 'observed') satisfies SourceType },
         artifacts: items.map(item => ({ type: 'trend', id: item.id })),
-        sources: items.map(item => ({ platform: item.platform, capturedAt: item.discoveredAt, sourceType: 'observed' })),
+        sources: items.map(item => ({ platform: item.platform, capturedAt: item.discoveredAt, sourceType: appConfig.skillBridgeMode === 'mock' ? 'simulated' : 'observed', metadata: item.metadata })),
       };
     }
     case 'hashtags': {
@@ -418,8 +444,38 @@ async function runAdapter(workflow: ProjectWorkflow, node: ProjectWorkflowNode, 
     }
     case 'draft-review':
       return { status: 'waiting_review', outputType: 'review-gate', output: { message: '请检查上游成果，确认后进入下一步。' } };
-    case 'publish':
-      return { status: 'waiting_review', outputType: 'publish-ready', output: { message: '成果已进入待发布区，确认后才会调用外部发布引擎。' } };
+    case 'image-studio': {
+      const engine = typeof node.config.engine === 'string' ? node.config.engine : undefined;
+      let urls: string[];
+      let provider: string;
+      if (engine === 'auto-redbook') {
+        const value = selectedInput?.value;
+        const document = value && typeof value === 'object' ? value as Record<string, unknown> : {};
+        const body = typeof value === 'string' ? value : [document.body, document.fullText, document.transcript, document.text].find(item => typeof item === 'string') as string | undefined;
+        const rendered = await renderAutoRedbookCards({ content: body || keyword, title: typeof document.title === 'string' ? document.title : undefined, theme: typeof node.config.theme === 'string' ? node.config.theme : undefined });
+        urls = rendered.allImages; provider = 'auto-redbook';
+      } else {
+        const image = await generateImage({ mode: 'text-to-image', engine, prompt: keyword });
+        if (image.status !== 'completed' || !image.url) throw new Error(image.errorMessage || '图片引擎没有返回可用成果');
+        urls = [image.url]; provider = image.engine;
+      }
+      return { status: 'completed', outputType: 'image-list', output: { items: urls.map((url, index) => ({ id: url, title: `配图 ${index + 1}`, url, engine: provider, contentId: workflow.finalContentId })) },
+        artifacts: urls.map(url => ({ type: 'image', url })), provider, sources: [{ sourceType: 'estimated', service: provider, capturedAt: new Date().toISOString() }] };
+    }
+    case 'analytics': {
+      const contentId = workflow.finalContentId;
+      const publication = contentId ? getDb().prepare("SELECT id FROM publications WHERE content_id=? AND status='published' AND post_url IS NOT NULL ORDER BY id DESC LIMIT 1").get(contentId) as { id: number } | undefined : undefined;
+      if (!publication) return { status: 'blocked', outputType: 'blocked', output: { message: '需要真实已发布的内容记录和笔记 URL，请先完成显式发布。' } };
+      const analytics = await trackAnalytics({ publicationId: publication.id });
+      if (analytics.sourceType !== 'observed') return { status: 'blocked', outputType: 'blocked', output: { message: '本项目分析节点要求真实发布数据；当前返回模拟或未知来源。' } };
+      return { status: 'completed', outputType: 'analytics', output: analytics, provider: analytics.provider,
+        artifacts: [{ type: 'analytics', id: analytics.id }], sources: [{ sourceType: analytics.sourceType, url: analytics.sourceUrl, id: analytics.sourceId, capturedAt: analytics.trackedAt }] };
+    }
+    case 'publish': {
+      if (!workflow.finalContentId) return { status: 'blocked', outputType: 'blocked', output: { message: '请先生成并确认需要发布的内容。' } };
+      const publication = preparePublication(workflow.finalContentId);
+      return { status: 'waiting_review', outputType: 'publish-ready', output: { publicationId: publication.id, contentId: workflow.finalContentId, message: '成果已进入发布列表。请在那里显式发布，再返回确认真实发布结果。' }, artifacts: [{ type: 'publication', id: publication.id }] };
+    }
     default:
       return { status: 'blocked', outputType: 'blocked', output: { message: `模块「${node.label}」尚未接入项目节点适配器。` } };
   }
@@ -430,23 +486,28 @@ export async function executeProjectNode(workflowId: number, nodeId: string, pat
   if (!workflow) throw new Error('项目工作流不存在');
   const node = workflow.nodes?.find(item => item.nodeId === nodeId);
   if (!node) throw new Error('项目节点不存在');
+  if (node.status === 'running') throw new Error('节点执行中，请等待当前任务完成');
+  if (node.status === 'completed') return workflow;
   const unready = predecessors(workflow, nodeId).filter(id => workflow.nodes?.find(item => item.nodeId === id)?.status !== 'completed');
   if (unready.length) throw new Error(`前置节点尚未完成: ${unready.join(', ')}`);
+  const requested = patch?.selectedInput || ((node.input as Record<string, unknown> | undefined)?.selectedInput as ProjectWorkbenchInput | undefined);
+  const selected = requested ? buildWorkbenchInputs(workflow, node).find(item => item.id === requested.id) : undefined;
+  if (predecessors(workflow, nodeId).length && !selected) throw new Error('请先选择有效的已确认上游成果');
 
   const db = getDb();
   const startedAt = new Date().toISOString();
   const config = { ...node.config, ...(patch?.config || {}) };
   db.prepare(`UPDATE project_workflow_nodes SET status='running', prompt=?, config=?, input_snapshot=?, error=NULL,
     attempt=attempt+1, started_at=?, completed_at=NULL, duration_ms=NULL, updated_at=datetime('now') WHERE workflow_id=? AND node_id=?`)
-    .run(patch?.prompt ?? node.prompt ?? null, stringify(config), stringify({ initial: workflow.initialInput, upstreamNodeIds: predecessors(workflow, nodeId), selectedInput: patch?.selectedInput || (node.input as Record<string, unknown> | undefined)?.selectedInput }), startedAt, workflowId, nodeId);
+    .run(patch?.prompt ?? node.prompt ?? null, stringify(config), stringify({ initial: workflow.initialInput, upstreamNodeIds: predecessors(workflow, nodeId), selectedInput: selected }), startedAt, workflowId, nodeId);
   db.prepare("UPDATE project_workflows SET status='running', current_node_id=?, updated_at=datetime('now') WHERE id=?").run(nodeId, workflowId);
 
   try {
     const refreshed = getProjectWorkflow(workflowId)!;
     const current = refreshed.nodes!.find(item => item.nodeId === nodeId)!;
-    const selectedInput = patch?.selectedInput || ((current.input as Record<string, unknown> | undefined)?.selectedInput as ProjectWorkbenchInput | undefined);
+    const selectedInput = selected;
     const result = await runAdapter(refreshed, current, patch?.prompt ?? current.prompt, selectedInput);
-    const requiresSelection = result.status === 'completed' && ['radar', 'trends', 'hashtags', 'content'].includes(current.moduleId);
+    const requiresSelection = result.status === 'completed' && ['radar', 'trends', 'hashtags', 'content', 'image-studio'].includes(current.moduleId);
     const candidates = requiresSelection ? adapterCandidates(current, result) : [];
     const normalizedResult = requiresSelection && candidates.length
       ? { ...result, status: 'waiting_review' as ProjectNodeStatus, output: { candidates, selected: null }, outputType: `${result.outputType}-candidates`, artifacts: candidates.map(candidate => ({ type: candidate.type, id: candidate.id })) }
@@ -454,8 +515,9 @@ export async function executeProjectNode(workflowId: number, nodeId: string, pat
     const completedAt = new Date().toISOString();
     const duration = Date.parse(completedAt) - Date.parse(startedAt);
     db.prepare(`UPDATE project_workflow_nodes SET status=?, output_snapshot=?, output_type=?, artifact_refs=?, source_refs=?,
-      completed_at=?, duration_ms=?, updated_at=datetime('now') WHERE workflow_id=? AND node_id=?`)
-      .run(normalizedResult.status, stringify(normalizedResult.output), normalizedResult.outputType, stringify(normalizedResult.artifacts || []), stringify(normalizedResult.sources || []), completedAt, duration, workflowId, nodeId);
+      completed_at=?, duration_ms=?, provider=?, model=?, error=?, updated_at=datetime('now') WHERE workflow_id=? AND node_id=?`)
+      .run(normalizedResult.status, stringify(normalizedResult.output), normalizedResult.outputType, stringify(normalizedResult.artifacts || []), stringify(normalizedResult.sources || []), completedAt, duration, result.provider || null, result.model || null,
+        result.status === 'blocked' ? String((result.output as Record<string, unknown>).message || '前置条件不足') : null, workflowId, nodeId);
     if (result.finalContentId) db.prepare('UPDATE project_workflows SET final_content_id=? WHERE id=?').run(result.finalContentId, workflowId);
 
     const after = getProjectWorkflow(workflowId)!;
@@ -484,6 +546,10 @@ export function confirmProjectNode(workflowId: number, nodeId: string): ProjectW
   if (!workflow || !node) throw new Error('项目节点不存在');
   if (node.status !== 'waiting_review') throw new Error('当前节点不需要人工确认');
   const output = node.output as Record<string, unknown> | undefined;
+  if (node.moduleId === 'publish') {
+    const publication = getDb().prepare('SELECT status,post_url FROM publications WHERE id=?').get(Number(output?.publicationId)) as { status: string; post_url: string } | undefined;
+    if (publication?.status !== 'published' || !publication.post_url) throw new Error('请先在发布列表显式发布并取得真实 URL，再确认');
+  }
   if (Array.isArray(output?.candidates) && !output?.selected) throw new Error('请先选择一条成果后再确认');
   const db = getDb();
   db.prepare("UPDATE project_workflow_nodes SET status='completed', updated_at=datetime('now') WHERE workflow_id=? AND node_id=?").run(workflowId, nodeId);

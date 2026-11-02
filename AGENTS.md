@@ -36,7 +36,7 @@
 
 - 本项目当前根 `package.json` 暴露 `ledger:check`（结构检查）与 `ledger:validate`（运行正/负例测试）。
 - 若实现型 preflight 存在，应把台账纳入必需上下文；closeout 未含台账必须失败。
-- **注意**：当前仓库无 git 基线、无 CI/Branch Protection，任何 claims 视为未生效；需仓库管理员配置 required status check 与直推限制。
+- **注意**：Git 基线已建立；CI workflow 的存在不等于远端门禁已生效。required status checks 与直推限制须以远端实际配置和运行证据为准，当前状态见统一台账。
 
 ## 4. 最终汇报格式
 

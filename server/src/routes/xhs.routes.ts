@@ -31,7 +31,7 @@ const QRCODE_PATH = path.join(config.xhsSkillPath, 'data', 'qrcode.png');
  */
 async function runXhsScript(args: string[]): Promise<{ stdout: string; stderr: string }> {
   if (!config.xhsSkillPath) {
-    throw new Error('XHS_SKILL_PATH 未配置');
+    throw new Error('小红书 Skill 未安装或路径失效；请按 README 安装并设置 XHS_SKILL_PATH，使用 /api/runtime/diagnostics 检查');
   }
   return execFileAsync(config.xhsPipelinePythonPath || 'python', ['-m', 'scripts', ...args], {
     cwd: config.xhsSkillPath,

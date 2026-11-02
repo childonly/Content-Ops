@@ -732,18 +732,7 @@ export async function renderAutoRedbookCards(params: {
   const engine = registry.get('auto-redbook') as AutoRedbookEngine | undefined;
   if (!engine) throw new Error('Auto-Redbook 引擎不可用');
 
-  // 使用引擎的 generate 方法
-  const result = await engine.generate({
-    mode: 'card',
-    engine: 'auto-redbook',
-    prompt: params.content,
-    title: params.title,
-    content: params.content,
-    theme: params.theme,
-    style: params.mode,
-  });
-
-  // 为了获取所有图片，直接调用 card-render 服务
+  // 专用接口直接返回一次渲染的完整结果，避免引擎与服务各生成一组图片。
   const cr = await import('./card-render/card-render.service');
   let markdown = '';
   if (params.title) {
@@ -760,6 +749,8 @@ export async function renderAutoRedbookCards(params: {
     outputDir,
     prefix,
     title: params.title,
+    subtitle: params.subtitle,
+    emoji: params.emoji,
   });
 
   return {

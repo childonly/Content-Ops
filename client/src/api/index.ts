@@ -1037,7 +1037,19 @@ export interface ProjectWorkflowDTO {
   nodes?: ProjectWorkflowNodeDTO[]
 }
 
+export interface ProjectNodeJobDTO {
+  id: string; workflowId: number; nodeId: string; kind: 'execute' | 'video';
+  status: 'running' | 'completed' | 'failed' | 'interrupted'; message?: string; error?: string; createdAt: string; updatedAt: string
+}
+
 export const projectWorkflowApi = {
+  startJob(id: number, nodeId: string, kind: 'execute' | 'video', params: Record<string, unknown>): Promise<ApiResponse<ProjectNodeJobDTO>> {
+    return httpPost<ProjectNodeJobDTO>(`/project-workflows/${id}/nodes/${encodeURIComponent(nodeId)}/jobs`, { kind, params })
+  },
+  getJob(jobId: string): Promise<ApiResponse<ProjectNodeJobDTO>> { return httpGet<ProjectNodeJobDTO>(`/project-workflows/jobs/${encodeURIComponent(jobId)}`) },
+  latestJob(id: number, nodeId: string): Promise<ApiResponse<ProjectNodeJobDTO | null>> {
+    return httpGet<ProjectNodeJobDTO | null>(`/project-workflows/${id}/nodes/${encodeURIComponent(nodeId)}/jobs/latest`)
+  },
   getList(): Promise<ApiResponse<ProjectWorkflowDTO[]>> { return httpGet<ProjectWorkflowDTO[]>('/project-workflows') },
   getById(id: number): Promise<ApiResponse<ProjectWorkflowDTO>> { return httpGet<ProjectWorkflowDTO>(`/project-workflows/${id}`) },
   create(data: { flowId: number; name: string; description?: string; initialInput?: Record<string, unknown> }): Promise<ApiResponse<ProjectWorkflowDTO>> {
@@ -1045,7 +1057,7 @@ export const projectWorkflowApi = {
   },
   delete(id: number): Promise<ApiResponse<void>> { return request.delete(`/project-workflows/${id}`).then(res => res.data) },
   executeNode(id: number, nodeId: string, data?: { prompt?: string; config?: Record<string, unknown>; selectedInput?: ProjectWorkbenchInputDTO }): Promise<ApiResponse<ProjectWorkflowDTO>> {
-    return httpPost<ProjectWorkflowDTO>(`/project-workflows/${id}/nodes/${encodeURIComponent(nodeId)}/execute`, data || {})
+    return request.post(`/project-workflows/${id}/nodes/${encodeURIComponent(nodeId)}/execute`, data || {}, { timeout: 300_000 }).then(res => res.data)
   },
   getWorkbench(id: number, nodeId: string): Promise<ApiResponse<ProjectNodeWorkbenchDTO>> {
     return httpGet<ProjectNodeWorkbenchDTO>(`/project-workflows/${id}/nodes/${encodeURIComponent(nodeId)}/workbench`)
@@ -1054,7 +1066,7 @@ export const projectWorkflowApi = {
     return request.put(`/project-workflows/${id}/nodes/${encodeURIComponent(nodeId)}/input`, input).then(res => res.data)
   },
   recommendPrompts(id: number, nodeId: string): Promise<ApiResponse<{ recommendations: ProjectPromptRecommendationDTO[]; provider?: string; model?: string; fallback: boolean }>> {
-    return httpPost(`/project-workflows/${id}/nodes/${encodeURIComponent(nodeId)}/prompt-recommendations`, {})
+    return request.post(`/project-workflows/${id}/nodes/${encodeURIComponent(nodeId)}/prompt-recommendations`, {}, { timeout: 300_000 }).then(res => res.data)
   },
   generateVideo(id: number, nodeId: string, data: { url: string; strategy?: 'transcribe' | 'alchemist'; model?: string; language?: string; platform?: string; sourceText?: string }): Promise<ApiResponse<ProjectWorkflowDTO>> {
     return request.post(`/project-workflows/${id}/nodes/${encodeURIComponent(nodeId)}/video/generate`, data, { timeout: 86_400_000 }).then(res => res.data)

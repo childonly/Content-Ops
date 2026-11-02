@@ -7,6 +7,7 @@ import fs from 'fs';
 import { config } from './config';
 import { createServiceLogger } from './utils/logger';
 import { initDb } from './db';
+import { getRuntimeDiagnostics } from './services/runtime-diagnostics.service';
 
 // 路由
 import { router as trendRoutes } from './routes/trend.routes';
@@ -71,6 +72,17 @@ const log = createServiceLogger('app');
 export function createApp(): express.Application {
   const app = express();
 
+  // 本机部署默认仅监听回环；显式配置 token 时所有 API 均校验授权。
+  if (!['127.0.0.1', 'localhost', '::1'].includes(config.host) && !config.apiToken) {
+    throw new Error('对外监听必须设置 CONTENT_OPS_API_TOKEN');
+  }
+  app.use('/api', (req, res, next) => {
+    if (config.apiToken && req.headers.authorization !== `Bearer ${config.apiToken}`) {
+      res.status(401).json({ success: false, error: '需要有效访问凭据' }); return;
+    }
+    next();
+  });
+
   // 中间件
   app.use(helmet({
     contentSecurityPolicy: false, // 开发环境禁用 CSP，避免阻塞内联脚本
@@ -124,6 +136,7 @@ export function createApp(): express.Application {
   app.get('/health', (_req: Request, res: Response) => {
     res.json({ status: 'ok', timestamp: new Date().toISOString() });
   });
+  app.get('/api/runtime/diagnostics', (_req, res) => res.json({ success: true, data: getRuntimeDiagnostics() }));
 
   // API 路由
   app.use('/api/trends', trendRoutes);

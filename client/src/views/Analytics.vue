@@ -16,6 +16,7 @@ import StatCard from '@/components/StatCard.vue'
 import { analyticsApi } from '@/api'
 import type { AnalyticsRecord } from '@/types'
 import dayjs from 'dayjs'
+import { analyticsCsv, metricText, observedRecords, sourceLabels } from '@/utils/analytics'
 
 // 注册 ECharts 组件
 use([
@@ -52,15 +53,9 @@ const pagination = reactive({
   total: 0
 })
 
-/** 格式化数字 */
-function formatNumber(num: number): string {
-  if (num >= 10000) return (num / 10000).toFixed(1) + '万'
-  return num.toLocaleString()
-}
-
 /** 汇总统计 */
 const summary = computed(() => {
-  const list = analyticsList.value
+  const list = observedRecords(analyticsList.value)
   const totalViews = list.reduce((sum, item) => sum + item.views, 0)
   const totalLikes = list.reduce((sum, item) => sum + item.likes, 0)
   const totalComments = list.reduce((sum, item) => sum + item.comments, 0)
@@ -76,6 +71,7 @@ const chartOption = shallowRef({})
 
 /** 生成趋势图配置（根据日期范围动态生成） */
 function buildChartOption(records: AnalyticsRecord[]): Record<string, unknown> {
+  records = observedRecords(records)
   if (records.length === 0) {
     return {
       title: { text: '暂无数据', left: 'center', textStyle: { fontSize: 16, color: '#999' } }
@@ -261,24 +257,7 @@ async function handleExportCSV(): Promise<void> {
   exporting.value = true
   try {
     const records = analyticsList.value
-    const headers = ['ID', '内容ID', '发布ID', '浏览量', '点赞', '评论', '分享', '收藏', '互动率(%)', '追踪时间']
-    const rows = records.map(r => [
-      r.id,
-      r.contentId,
-      r.publicationId,
-      r.views,
-      r.likes,
-      r.comments,
-      r.shares,
-      r.collects,
-      r.engagementRate.toFixed(2),
-      r.trackedAt
-    ])
-
-    // 构建 CSV 内容（BOM 头确保中文正确显示）
-    const csvContent = '\uFEFF' + [headers, ...rows]
-      .map(row => row.map(cell => `"${cell}"`).join(','))
-      .join('\n')
+    const csvContent = analyticsCsv(records)
 
     // 创建下载链接
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
@@ -405,9 +384,16 @@ onMounted(() => {
     <el-card shadow="never">
       <template #header>
         <span class="font-large font-bold">分析记录</span>
+        <span class="record-count"> 汇总和图表仅计入实测数据；未提供的指标显示 —。</span>
         <span class="record-count">（共 {{ pagination.total }} 条）</span>
       </template>
       <el-table :data="analyticsList" style="width: 100%" stripe>
+        <el-table-column label="数据来源" min-width="140">
+          <template #default="{ row }">
+            <el-tag :type="row.sourceType === 'observed' ? 'success' : 'warning'">{{ sourceLabels[row.sourceType as keyof typeof sourceLabels || 'unknown'] }}</el-tag>
+            <a v-if="row.sourceUrl" :href="row.sourceUrl" target="_blank" rel="noopener noreferrer"> 查看来源</a>
+          </template>
+        </el-table-column>
         <el-table-column label="内容标题" min-width="180" show-overflow-tooltip>
           <template #default="{ row }">
             内容 #{{ row.contentId }}
@@ -415,28 +401,28 @@ onMounted(() => {
         </el-table-column>
         <el-table-column label="浏览量" width="100" align="right">
           <template #default="{ row }">
-            {{ formatNumber(row.views) }}
+            {{ metricText(row, 'views') }}
           </template>
         </el-table-column>
         <el-table-column label="点赞" width="90" align="right">
           <template #default="{ row }">
-            {{ formatNumber(row.likes) }}
+            {{ metricText(row, 'likes') }}
           </template>
         </el-table-column>
         <el-table-column label="评论" width="90" align="right">
           <template #default="{ row }">
-            {{ formatNumber(row.comments) }}
+            {{ metricText(row, 'comments') }}
           </template>
         </el-table-column>
         <el-table-column label="分享" width="90" align="right">
           <template #default="{ row }">
-            {{ formatNumber(row.shares) }}
+            {{ metricText(row, 'shares') }}
           </template>
         </el-table-column>
         <el-table-column label="互动率" width="100" align="right">
           <template #default="{ row }">
             <span :class="row.engagementRate >= 5 ? 'text-success' : 'text-warning'">
-              {{ row.engagementRate.toFixed(2) }}%
+              {{ metricText(row, 'engagementRate') }}
             </span>
           </template>
         </el-table-column>

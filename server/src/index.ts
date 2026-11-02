@@ -8,7 +8,7 @@ const log = createServiceLogger('server');
 
 const app = createApp();
 
-const server = app.listen(config.port, async () => {
+const server = app.listen(config.port, config.host, async () => {
   log.info(`🚀 Content Ops Hub 服务已启动`, {
     port: config.port,
     env: config.nodeEnv,

@@ -3,6 +3,7 @@ import { config } from '../config';
 import { createServiceLogger } from '../utils/logger';
 import path from 'path';
 import fs from 'fs';
+import { backupSqliteDatabase, addAnalyticsProvenance, createNodeJobs, recoverNodeJobs } from './safety';
 
 const log = createServiceLogger('database');
 
@@ -46,7 +47,7 @@ function addColumnIfMissing(db: Database.Database, table: string, column: string
  *
  * 按照 DATA_PROTECTION_RULES.md 规则，每次执行迁移前必须创建带时间戳的备份。
  * 备份文件命名: {dbPath}.pre-migrate-{timestamp}
- * 备份失败不阻止迁移，但会记录警告。
+ * 备份失败中止迁移，防止在没有可恢复快照时修改数据库。
  */
 function backupDatabaseBeforeMigration(dbPath: string): void {
   try {
@@ -56,10 +57,10 @@ function backupDatabaseBeforeMigration(dbPath: string): void {
     }
     const timestamp = Date.now();
     const backupPath = `${dbPath}.pre-migrate-${timestamp}`;
-    fs.copyFileSync(dbPath, backupPath);
+    backupSqliteDatabase(getDb(), backupPath);
     log.info(`[backup] 迁移前数据库备份完成: ${backupPath}`);
   } catch (e) {
-    log.warn(`[backup] 迁移前备份失败(不阻止迁移): ${(e as Error).message}`);
+    throw new Error(`迁移前备份失败，已中止迁移: ${(e as Error).message}`);
   }
 }
 
@@ -79,11 +80,15 @@ function backupDatabaseBeforeMigration(dbPath: string): void {
  * 数据保护: 迁移前自动备份，迁移仅添加列/表/补全空值，绝不删除数据。
  * 详见 DATA_PROTECTION_RULES.md
  */
-export function migrateDb(): void {
+export function migrateDb(backup = true): void {
   // 迁移前备份（数据保护规则要求）
-  backupDatabaseBeforeMigration(config.dbPath);
+  if (backup) backupDatabaseBeforeMigration(config.dbPath);
 
   const db = getDb();
+
+  addAnalyticsProvenance(db);
+  createNodeJobs(db);
+  recoverNodeJobs(db);
 
   // 服务重启后，将上次进程中断留下的 running 运行记录标记为失败，避免界面长期显示“执行中”。
   if ((db.pragma('table_info(business_flow_runs)') as Array<{ name: string }>).length > 0) {
@@ -371,6 +376,7 @@ export function migrateDb(): void {
 
 export function initDb(): void {
   const db = getDb();
+  backupDatabaseBeforeMigration(config.dbPath);
 
   db.exec(`
     -- ============================================================
@@ -815,7 +821,7 @@ export function initDb(): void {
 
   // 先执行字段升级(为已存在的 pipeline_runs 添加新列),
   // 然后再创建索引(索引可能引用新列,如 idx_pipeline_runs_keyword)
-  migrateDb();
+  migrateDb(false);
 
   // 创建索引(此时所有列都已存在)
   db.exec(`

@@ -70,6 +70,19 @@ content-ops-hub/
 
 ## 快速开始
 
+### 当前运行与收口说明（2026-11-02）
+
+- 使用 Node.js 22（本机验证 22.23.1，见 `.nvmrc`）。在根目录双击 `start.bat`，或执行 `powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\start-services.ps1`；单独启动可加 `-BackendOnly` / `-FrontendOnly`。
+- 工作台：[http://127.0.0.1:5180/workspace](http://127.0.0.1:5180/workspace)；后端健康检查：[http://127.0.0.1:3100/health](http://127.0.0.1:3100/health)；运行依赖诊断：[runtime diagnostics](http://127.0.0.1:3100/api/runtime/diagnostics)。日志见 `logs/*-node22.*.log`。
+- 已有数据库日常启动无需再次初始化。迁移只增加字段/表，迁移前通过 SQLite 一致性快照备份 WAL 内容；备份失败会中止迁移。恢复应先在隔离副本验证，不覆盖现有业务库。
+- 未配置 `.env` 时复制根 `.env.example` 到 `server/.env` 并填写本机配置；不要提交凭据、Cookie、数据库或生成文件。
+- 小红书发布需要独立安装 `xiaohongshu-skill`，安装步骤见[上游安装文档](https://github.com/DeliciousBuding/xiaohongshu-skill/blob/main/docs/INSTALL.md)。设置 `XHS_SKILL_PATH` 为实际目录；可通过 `XHS_PIPELINE_PYTHON_PATH` 指定 Python。路径发现会跳过失效路径和 Windows Store alias。安装、依赖、登录和真实发布应分步验证；没有 Skill 时诊断明确报告缺失。
+- 真实效果追踪要求已发布的小红书 canonical 笔记 URL 及可用 TikHub 权限；未提供的指标显示缺失，历史来源标为 unknown，模拟数据不混入实测统计。
+- 项目节点后台任务可关闭重开后恢复查看。发布节点只生成待发布记录，不自动发帖；在发布列表显式发布取得真实 URL 后，才能返回确认并进入分析。
+- 默认只监听 `127.0.0.1`。若显式设置 `CONTENT_OPS_HOST` 为非回环地址，必须设置 `CONTENT_OPS_API_TOKEN`；API 客户端携带 `Authorization: Bearer <token>`。公网部署还需要独立完成 TLS、账号权限、网络访问控制验收。
+- 验证：Node 22 环境运行 `npm run check`（台账、真实 lint、服务端/前端测试、构建、隔离数据库 API 冒烟）；`npm run test:cards` 运行 8 主题×4 分页模式实渲染。测试产物在忽略的 `logs/` 下；不会对外发布或删除业务库。
+- `.github/workflows/quality.yml` 已加入检查与卡片矩阵；远端 Actions/required checks 实际生效状态以台账取证为准。完整实施与剩余人工验收见 [统一台账](docs/DEVELOPMENT-LEDGER.md)。
+
 ### 1. 安装依赖
 
 ```bash

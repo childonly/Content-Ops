@@ -70,7 +70,8 @@ router.get('/', async (_req: Request, res: Response) => {
       }))
     );
 
-    const onlineCount = checks.filter((s) => s.online).length;
+    const required = checks.filter(service => service.name === 'content-ops-hub');
+    const onlineCount = required.filter((s) => s.online).length;
 
     return res.json({
       success: true,
@@ -78,7 +79,7 @@ router.get('/', async (_req: Request, res: Response) => {
         portManagerOnline: checks.find((s) => s.port === 7400)?.online || false,
         services: checks,
         summary: {
-          total: checks.length,
+          total: required.length,
           online: onlineCount,
         },
       },
