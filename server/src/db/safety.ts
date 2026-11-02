@@ -36,4 +36,3 @@ export function recoverNodeJobs(db: Database.Database): void {
     UPDATE project_node_jobs SET status='interrupted', error='执行进程中断，请检查已有成果后重试', updated_at=datetime('now') WHERE status='running';`);
   })();
 }
-

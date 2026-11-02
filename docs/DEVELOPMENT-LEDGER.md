@@ -61,33 +61,16 @@
 
 ## 3. 当前项目快照与警报
 
-- **审计时间**：2026-11-01 16:13 (+08:00, Asia/Shanghai)；当前结论见 `AUDIT-20261101-001`。
-- **分支**：`main`
-- **HEAD / commit**：`ae6f3dc0224ba090dd8566ee57be4e3a7dde0b77`（2026-10-26；本地共 2 个提交）。
-- **git status**：审计开始时 clean；本窗口仅修改 `docs/DEVELOPMENT-LEDGER.md`，未提交。
-- **Git 远端**：`git@github.com:childonly/Content-Ops.git`；[仓库链接](https://github.com/childonly/Content-Ops)。远端在线状态、Actions 和 Branch Protection 本次未远程核验。
-- **运行状态**：审计开始时 3100/5180 均未监听；本窗口用 `start-services.ps1` 启动并实测 HTTP 200，后端 PID 51012、前端 PID 22536。进程号仅为本次快照。
-- **路径事实（已验证，2026-11-01，按 tracked 源文件递归计数）**：
-  - 后端：`server/src/services/` 38 个业务 TypeScript 文件（不含测试），`server/src/routes/` 32 个路由文件
-  - 前端：`client/src/views/` 16 个视图，`client/src/components/` 11 个组件（含 `flow/` 子目录 6 个）
-  - **COH-005/006/007 代码真实存在且部分可运行**：工作台和项目画布已浏览器抽查；ContentStudio.vue 当前约 2855 行、FlowHome.vue 约 2369 行。存在代码不等于全部功能已完成。
-  - 权威文档：`README.md`、`ARCHITECTURE.md`、`CHANGELOG.md`（最新条目 2026-07-21）、`DATA_PROTECTION_RULES.md`
-  - 根规则：`AGENTS.md`；无 `CLAUDE.md`、无 `.cursor/`、无 `.github/`
-  - 历史规划：`docs/superpowers/specs/` 5 份规格 + `docs/superpowers/plans/` 3 份计划（2026-07-30 ~ 08-02）；仓库未发现覆盖全项目且逐项验收的总任务书/PRD。
-  - **当前验证（2026-11-01，Node 22.23.1，main@ae6f3dc）**：后端 6 文件 / 116 用例通过；后端 tsc 通过；前端 vue-tsc 通过，但 Vite 构建失败（ImageStudioView.vue:531，常量用于 v-model）。因此根 `npm run build` 失败。
-  - **当前运行抽查**：8 项只读 API 成功；Auto-Redbook 本地渲染返回 2 张 1080×1440 PNG 且图片 GET 200；图片工作室前端页复现编译错误；小红书登录检查因 Python ENOENT 返回 500，两个发布引擎均 unavailable。
-  - **数据库只读检查**：31 张业务表，`PRAGMA quick_check=ok`，外键违规 0；2 条定时配置中启用数为 0。启动前后抽查的 10 张主要业务表行数相同；没有执行真实发布或业务删除。
-  - `lint` 为占位符 `echo 'Add linter config'`
-  - 门禁：根 `package.json` 暴露 `ledger:check`/`ledger:validate`；2026-11-01 重跑正/负例 5/5 通过。无前端自动化测试脚本，无 tracked CI workflow。
-- **当前最高优先级风险**：
-  - [发布阻塞] 前端构建失败；图片工作室开发页面同样不可用。
-  - [集成阻塞] 小红书 Skill 和 Python 路径失效，发布引擎 0/2 可用；真实发布闭环未验收。
-  - [功能缺口] trae 模式的效果追踪仍使用随机模拟数据；模拟标识未持久化；蓝图执行含模拟节点，项目节点缺少配图/分析适配器。
-  - [工程缺口] lint 占位、无本地 CI workflow；卡片模板/CSS 构建复制未自动化；远端保护状态未知。
-- **并行修改冲突**：当前未发现其他窗口产生的新差异；§7 的历史 ACTIVE 条目不能据此推定仍在线，不代替原 Owner 验收/关闭。
-- **外部环境阻塞**：Python/Skill 路径需修复；TikHub/LLM 仅确认凭据已配置，未调用计费外部接口；小红书账号与真实发布仍待后续验收。
-- **冻结/退役边界**：目前无 FROZEN / RETIREMENT_CANDIDATE 项。
-- **历史口径校正**：9 月“无 Git/无远端”的快照已过期，Git 基线阻塞已解除。`AGENTS.md` 仍有旧警报，应由治理窗口同步。旧任务行与历史审计保留，不作为当前 PASS；本次只关闭调研任务，不替原 Owner 关闭产品任务。
+- **当前日期 / 分支**：2026-11-02（Asia/Shanghai），`codex/closeout-20261101`；本窗口承接用户批准的 D1–D10。
+- **已上传代码提交**：`33e60595f93d5ebb151a4103c7fe1f2f979a5ae3`；[GitHub 分支](https://github.com/childonly/Content-Ops/tree/codex/closeout-20261101)。这是产品代码提交；后续文档取证提交以 Git HEAD 为准。
+- **验证**：`npm run check` 全部通过：服务端 149 用例、前端 8 用例、37 项 HTTP 断言、真实 lint、前后端构建、台账门禁；`test:cards` 8 主题×4 模式 32/32 通过。API 断言数量随轮询次数变化，固定生命周期场景均通过。
+- **独立复审**：3 个 Important 均已用 RED→GREEN 测试修复（配图写入内容、完整正文传给卡片、发布重试引用稳定）；无单列 minor。完整证据见 §9 IMPLEMENT-20261101-001。
+- **运行**：Python 自动发现可用；小红书 Skill 仍未安装。后端新代码已启动；前端代理 dashboard API 实测 200。地址与方式见 §10；深浅模式及完整交互仍待人工验收。
+- **GitHub Actions**：首个代码提交已触发 [quality](https://github.com/childonly/Content-Ops/actions/runs/41374402152)，首次查询 in_progress；required checks/Branch Protection 未确认启用。
+- **发布阻塞**：真实小红书 Skill/账号与 TikHub/LLM 权限、真实视频长任务、完整业务验收仍未闭合；不宣称真实发布链路已验收。
+- **依赖风险**：生产依赖审计 32 项（含级联影响）：2 critical、26 high、4 moderate；非强制自动修复遇 npm 工作区错误，未执行 force 升级；生产发布前需处理。
+- **数据保护**：只做加法迁移；SQLite 一致性快照先于迁移，失败阻断。测试与恢复演练使用隔离库；未对外发帖、未删除业务数据。7 月两条遗留 pipeline running 记录保留，非本窗口新启动任务。
+- **治理口径**：历史任务行永久保留，旧 75%/90% 与历史 PASS 不能代替当前验收。本窗口原 Task ID 保持 90%，等待外部/人工验收，不填写完成时间。未发现其他窗口新差异。
 
 ---
 
@@ -109,7 +92,7 @@
 | COH-GOV-005 | 2026-09-21 | — | Auto-Redbook-Skills 集成可行性研究 | 25% | 🟨 范围/Owner/依赖已确认；完成对比分析与集成方案建议 | 待用户确认集成路线后进入实施 | 治理/研究窗口 | 项目负责人（确认路线）→ 实施窗口（开发） |
 | COH-008 | 2026-09-22 | — | Auto-Redbook 卡片渲染引擎集成（阶段一+二） | 90% | 🟩 阶段一完成：card-render.service.ts 真实 Playwright 渲染引擎（8主题+4分页）、AutoRedbookEngine 替换、路由注册；阶段二完成：pipeline-enhancer 升级为真实卡片生成；前端完成：图片工作室 UI 接入 Auto-Redbook 选项；后端编译通过；116 测试全通过 | 待端到端联调验证；待人工验收 | 本窗口（实施） | 项目负责人（验收） |
 | COH-AUDIT-20261101 | 2026-11-01 | 2026-11-01 | 项目现状复核、访问与启动取证、任务书核查及收口计划 | 100% | ✅ CLOSED；当前代码/构建/测试/运行证据与详细实施清单已写入 §9，访问方式见 §10 | 调研无阻塞；产品构建、外部集成与功能缺口仍未解决，不因调研销项关闭 | 本审计窗口 | 无（调研完全销项；后续产品实施按原 Task ID 另行认领） |
-| COH-CLOSEOUT-20261101 | 2026-11-01 | — | 用户批准 D1–D10 收口实施及 GitHub 上传；承接 COH-001/002/003/005/006/007/008 | 90% | 🟦 ACTIVE；代码修复/测试/独立复审完成，准备普通推送 codex/closeout-20261101；保留整体验收项 | 缺失小红书 Skill/账号与真实数据权限；生产依赖漏洞、远端保护及完整人工验收未闭合 | 本收口窗口 | 本窗口推送 → 项目负责人完成外部与人工验收 |
+| COH-CLOSEOUT-20261101 | 2026-11-01 | — | 用户批准 D1–D10 收口实施及 GitHub 上传；承接 COH-001/002/003/005/006/007/008 | 90% | 🟦 ACTIVE；代码修复/测试/独立复审完成，已普通推送 codex/closeout-20261101（33e6059），远端 CI 已触发；保留整体验收项 | 缺失小红书 Skill/账号与真实数据权限；生产依赖漏洞、远端保护及完整人工验收未闭合 | 本收口窗口 | 本窗口推送 → 项目负责人完成外部与人工验收 |
 
 > 说明：原 Owner 的任务行保留历史里程碑与接力信息；其中 75%/90% 不构成 2026-11-01 当前 PASS，也不能平均为项目总完成率。当前分模块判断与失败证据见 §3、§6、`AUDIT-20261101-001`。本窗口未接管原任务的产品修改范围。
 
@@ -216,6 +199,9 @@
 - 本地证据：logs/closeout-review-check.log（完整 check）、logs/card-matrix.log（32/32），测试数据库均隔离在 logs/ 下，未对外发帖或删除业务数据；后端已重启加载新代码，runtime/diagnostics 报 Python=true、Skill=false；前端代理 API 200。7 月遗留的 2 条 pipeline running 记录保持原样，不当作当前活跃任务。
 - 依赖风险：npm audit --omit=dev 返回 32 项（2 critical、26 high、4 moderate，含级联影响）；非强制 audit fix 遇 npm Arborist edgesOut 错误，未采用 force/未经验证的大版本升级。生产发布前须独立处理此风险；本轮不宣称生产可发布。
 - 决策：继续使用现有技术栈和统一台账；发布保留人工门；缺失外部依赖不伪造通过；大型画布深度重构不混入链路修复。代价为后续运维/人工验收及重构仍需排期。
+
+- 上传取证：2026-11-02 已普通推送 `33e6059` 到 `origin/codex/closeout-20261101`，没有修改 main 或强推；[代码提交](https://github.com/childonly/Content-Ops/commit/33e60595f93d5ebb151a4103c7fe1f2f979a5ae3)。Actions run 41374402152 已触发，首次查询 in_progress。自动审批额度曾导致提交未执行，用户继续后重新审批通过，再执行提交/推送。
+- 最新完整检查：149 个服务端测试、8 个前端测试、37 HTTP 断言、lint/build/ledger 全通过；卡片矩阵 32/32。补正新增文件 EOF 空行并再次检查差异；仅格式/台账后续提交，不改变产品行为。
 
 ### AUDIT-20261101-001（当前代码、访问与收口计划复核）
 
