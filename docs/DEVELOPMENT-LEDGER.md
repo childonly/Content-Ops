@@ -66,7 +66,7 @@
 - **验证**：`npm run check` 全部通过：服务端 149 用例、前端 8 用例、37 项 HTTP 断言、真实 lint、前后端构建、台账门禁；`test:cards` 8 主题×4 模式 32/32 通过。API 断言数量随轮询次数变化，固定生命周期场景均通过。
 - **独立复审**：3 个 Important 均已用 RED→GREEN 测试修复（配图写入内容、完整正文传给卡片、发布重试引用稳定）；无单列 minor。完整证据见 §9 IMPLEMENT-20261101-001。
 - **运行**：Python 自动发现可用；小红书 Skill 仍未安装。后端新代码已启动；前端代理 dashboard API 实测 200。地址与方式见 §10；深浅模式及完整交互仍待人工验收。
-- **GitHub Actions**：首个代码提交已触发 [quality](https://github.com/childonly/Content-Ops/actions/runs/41374402152)，首次查询 in_progress；required checks/Branch Protection 未确认启用。
+- **GitHub Actions**：首个代码提交已触发 [quality](https://github.com/childonly/Content-Ops/actions/runs/41374402152)，首次运行在 Linux 构建缺失 Rollup 原生绑定而失败；已显式补充匹配版本可选绑定并等待重跑；required checks/Branch Protection 未确认启用。
 - **发布阻塞**：真实小红书 Skill/账号与 TikHub/LLM 权限、真实视频长任务、完整业务验收仍未闭合；不宣称真实发布链路已验收。
 - **依赖风险**：生产依赖审计 32 项（含级联影响）：2 critical、26 high、4 moderate；非强制自动修复遇 npm 工作区错误，未执行 force 升级；生产发布前需处理。
 - **数据保护**：只做加法迁移；SQLite 一致性快照先于迁移，失败阻断。测试与恢复演练使用隔离库；未对外发帖、未删除业务数据。7 月两条遗留 pipeline running 记录保留，非本窗口新启动任务。
@@ -202,6 +202,8 @@
 
 - 上传取证：2026-11-02 已普通推送 `33e6059` 到 `origin/codex/closeout-20261101`，没有修改 main 或强推；[代码提交](https://github.com/childonly/Content-Ops/commit/33e60595f93d5ebb151a4103c7fe1f2f979a5ae3)。Actions run 41374402152 已触发，首次查询 in_progress。自动审批额度曾导致提交未执行，用户继续后重新审批通过，再执行提交/推送。
 - 最新完整检查：149 个服务端测试、8 个前端测试、37 HTTP 断言、lint/build/ledger 全通过；卡片矩阵 32/32。补正新增文件 EOF 空行并再次检查差异；仅格式/台账后续提交，不改变产品行为。
+
+- 跨平台修复：GitHub run 41374402152 的测试通过，Linux 构建缺 @rollup/rollup-linux-x64-gnu；补入与 Rollup 4.62.2 匹配的可选平台包和锁文件。没有跳过构建门禁，待新提交 CI 验证。
 
 ### AUDIT-20261101-001（当前代码、访问与收口计划复核）
 
